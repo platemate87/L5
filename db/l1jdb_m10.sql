@@ -18,3 +18,8 @@ CREATE TABLE `character_offline_shop` (
 
 INSERT INTO `commands` VALUES ('offlinekick', '200', 'L1OfflineShopDisconnect', 'Disconnect all active offline private shops.', '0');
 
+-- Ensure fresh installations include HP/MP gain history tracking columns
+ALTER TABLE `characters`
+  ADD COLUMN `HpGainHistory` TEXT NULL,
+  ADD COLUMN `MpGainHistory` TEXT NULL;
+

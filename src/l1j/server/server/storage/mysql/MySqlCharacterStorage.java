@@ -19,8 +19,10 @@
 package l1j.server.server.storage.mysql;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 
@@ -126,8 +128,21 @@ public class MySqlCharacterStorage implements CharacterStorage {
 			pc.setOriginalCha(rs.getInt("OriginalCha"));
                         pc.setOriginalInt(rs.getInt("OriginalInt"));
                         pc.setOriginalWis(rs.getInt("OriginalWis"));
-                        pc.loadHpGainHistory(rs.getString("HpGainHistory"));
-                        pc.loadMpGainHistory(rs.getString("MpGainHistory"));
+                        boolean hasHpGainHistoryColumn = false;
+                        boolean hasMpGainHistoryColumn = false;
+                        try {
+                                ResultSetMetaData metaData = rs.getMetaData();
+                                hasHpGainHistoryColumn = hasColumn(metaData, "HpGainHistory");
+                                hasMpGainHistoryColumn = hasColumn(metaData, "MpGainHistory");
+                        } catch (SQLException columnCheckError) {
+                                _log.debug("Unable to determine gain history columns during load", columnCheckError);
+                        }
+                        if (hasHpGainHistoryColumn) {
+                                pc.loadHpGainHistory(rs.getString("HpGainHistory"));
+                        }
+                        if (hasMpGainHistoryColumn) {
+                                pc.loadMpGainHistory(rs.getString("MpGainHistory"));
+                        }
 
                         Timestamp lastJoinedPledge = rs.getTimestamp("date_joined_pledge");
                         pc.setLastJoinedPledge(lastJoinedPledge == null ? 0 : lastJoinedPledge.getTime());
@@ -154,9 +169,19 @@ public class MySqlCharacterStorage implements CharacterStorage {
 		PreparedStatement pstm = null;
 		try {
 			int i = 0;
-			con = L1DatabaseFactory.getInstance().getConnection();
-                        pstm = con.prepareStatement(
-                                        "INSERT INTO characters SET account_name=?,objid=?,char_name=?,birthday=?,level=?,HighLevel=?,Exp=?,MaxHp=?,CurHp=?,MaxMp=?,CurMp=?,Ac=?,Str=?,Con=?,Dex=?,Cha=?,Intel=?,Wis=?,Status=?,Class=?,Sex=?,Type=?,Heading=?,LocX=?,LocY=?,MapID=?,Food=?,Lawful=?,Title=?,ClanID=?,Clanname=?,ClanRank=?,BonusStatus=?,ElixirStatus=?,ElfAttr=?,PKcount=?,PkCountForElf=?,ExpRes=?,PartnerID=?,AccessLevel=?,OnlineStatus=?,HomeTownID=?,Contribution=?,Pay=?,HellTime=?,Banned=?,Karma=?,LastPk=?,LastPkForElf=?,DeleteTime=?,OriginalStr=?,OriginalCon=?,OriginalDex=?,OriginalCha=?,OriginalInt=?,OriginalWis=?,HpGainHistory=?,MpGainHistory=?");
+                        con = L1DatabaseFactory.getInstance().getConnection();
+                        boolean hasHpGainHistory = columnExists(con, "characters", "HpGainHistory");
+                        boolean hasMpGainHistory = columnExists(con, "characters", "MpGainHistory");
+
+                        StringBuilder insert = new StringBuilder(
+                                        "INSERT INTO characters SET account_name=?,objid=?,char_name=?,birthday=?,level=?,HighLevel=?,Exp=?,MaxHp=?,CurHp=?,MaxMp=?,CurMp=?,Ac=?,Str=?,Con=?,Dex=?,Cha=?,Intel=?,Wis=?,Status=?,Class=?,Sex=?,Type=?,Heading=?,LocX=?,LocY=?,MapID=?,Food=?,Lawful=?,Title=?,ClanID=?,Clanname=?,ClanRank=?,BonusStatus=?,ElixirStatus=?,ElfAttr=?,PKcount=?,PkCountForElf=?,ExpRes=?,PartnerID=?,AccessLevel=?,OnlineStatus=?,HomeTownID=?,Contribution=?,Pay=?,HellTime=?,Banned=?,Karma=?,LastPk=?,LastPkForElf=?,DeleteTime=?,OriginalStr=?,OriginalCon=?,OriginalDex=?,OriginalCha=?,OriginalInt=?,OriginalWis=?");
+                        if (hasHpGainHistory) {
+                                insert.append(",HpGainHistory=?");
+                        }
+                        if (hasMpGainHistory) {
+                                insert.append(",MpGainHistory=?");
+                        }
+                        pstm = con.prepareStatement(insert.toString());
 			pstm.setString(++i, pc.getAccountName());
 			pstm.setInt(++i, pc.getId());
 			pstm.setString(++i, pc.getName());
@@ -217,8 +242,12 @@ public class MySqlCharacterStorage implements CharacterStorage {
                         pstm.setInt(++i, pc.getOriginalCha());
                         pstm.setInt(++i, pc.getOriginalInt());
                         pstm.setInt(++i, pc.getOriginalWis());
-                        pstm.setString(++i, pc.getHpGainHistoryData());
-                        pstm.setString(++i, pc.getMpGainHistoryData());
+                        if (hasHpGainHistory) {
+                                pstm.setString(++i, pc.getHpGainHistoryData());
+                        }
+                        if (hasMpGainHistory) {
+                                pstm.setString(++i, pc.getMpGainHistoryData());
+                        }
 			pstm.execute();
 			_log.trace("stored char data: " + pc.getName());
 		} catch (SQLException e) {
@@ -291,14 +320,24 @@ public class MySqlCharacterStorage implements CharacterStorage {
 		PreparedStatement pstm = null;
 		try {
 			int i = 0;
-                        String statement = "UPDATE characters SET level=?,HighLevel=?,Exp=?,MaxHp=?,CurHp=?,MaxMp=?,CurMp=?,Ac=?,Str=?,Con=?,Dex=?,Cha=?,Intel=?,Wis=?,Status=?,Class=?,Sex=?,Type=?,Heading=?,LocX=?,LocY=?,MapID=?,Food=?,Lawful=?,Title=?,ClanID=?,Clanname=?,ClanRank=?,BonusStatus=?,ElixirStatus=?,ElfAttr=?,PKcount=?,PkCountForElf=?,ExpRes=?,PartnerID=?,AccessLevel=?,OnlineStatus=?,HomeTownID=?,Contribution=?,HellTime=?,Banned=?,Karma=?,LastPk=?,LastPkForElf=?,DeleteTime=?,OriginalStr=?,OriginalCon=?,OriginalDex=?,OriginalCha=?,OriginalInt=?,OriginalWis=?,HpGainHistory=?,MpGainHistory=? WHERE objid=?";
+                        con = L1DatabaseFactory.getInstance().getConnection();
+                        boolean hasHpGainHistory = columnExists(con, "characters", "HpGainHistory");
+                        boolean hasMpGainHistory = columnExists(con, "characters", "MpGainHistory");
 
-			if (pc.getLastJoinedPledge() > 0) {
-				statement = statement.replace(" WHERE objid=?", ",date_joined_pledge=?  WHERE objid=?");
-			}
+                        StringBuilder statement = new StringBuilder(
+                                        "UPDATE characters SET level=?,HighLevel=?,Exp=?,MaxHp=?,CurHp=?,MaxMp=?,CurMp=?,Ac=?,Str=?,Con=?,Dex=?,Cha=?,Intel=?,Wis=?,Status=?,Class=?,Sex=?,Type=?,Heading=?,LocX=?,LocY=?,MapID=?,Food=?,Lawful=?,Title=?,ClanID=?,Clanname=?,ClanRank=?,BonusStatus=?,ElixirStatus=?,ElfAttr=?,PKcount=?,PkCountForElf=?,ExpRes=?,PartnerID=?,AccessLevel=?,OnlineStatus=?,HomeTownID=?,Contribution=?,HellTime=?,Banned=?,Karma=?,LastPk=?,LastPkForElf=?,DeleteTime=?,OriginalStr=?,OriginalCon=?,OriginalDex=?,OriginalCha=?,OriginalInt=?,OriginalWis=?");
+                        if (hasHpGainHistory) {
+                                statement.append(",HpGainHistory=?");
+                        }
+                        if (hasMpGainHistory) {
+                                statement.append(",MpGainHistory=?");
+                        }
+                        if (pc.getLastJoinedPledge() > 0) {
+                                statement.append(",date_joined_pledge=?");
+                        }
+                        statement.append(" WHERE objid=?");
 
-			con = L1DatabaseFactory.getInstance().getConnection();
-			pstm = con.prepareStatement(statement);
+                        pstm = con.prepareStatement(statement.toString());
 			pstm.setInt(++i, pc.getLevel());
 			pstm.setInt(++i, pc.getHighLevel());
 			pstm.setInt(++i, pc.getExp());
@@ -354,8 +393,12 @@ public class MySqlCharacterStorage implements CharacterStorage {
                         pstm.setInt(++i, pc.getOriginalCha());
                         pstm.setInt(++i, pc.getOriginalInt());
                         pstm.setInt(++i, pc.getOriginalWis());
-                        pstm.setString(++i, pc.getHpGainHistoryData());
-                        pstm.setString(++i, pc.getMpGainHistoryData());
+                        if (hasHpGainHistory) {
+                                pstm.setString(++i, pc.getHpGainHistoryData());
+                        }
+                        if (hasMpGainHistory) {
+                                pstm.setString(++i, pc.getMpGainHistoryData());
+                        }
 
                         if (pc.getLastJoinedPledge() > 0) {
                                 pstm.setTimestamp(++i, new Timestamp(pc.getLastJoinedPledge()));
@@ -370,6 +413,33 @@ public class MySqlCharacterStorage implements CharacterStorage {
 		} finally {
 			SQLUtil.close(pstm);
 			SQLUtil.close(con);
-		}
-	}
+        }
+
+        private boolean hasColumn(ResultSetMetaData metaData, String columnName) throws SQLException {
+                int columnCount = metaData.getColumnCount();
+                for (int columnIndex = 1; columnIndex <= columnCount; columnIndex++) {
+                        if (columnName.equalsIgnoreCase(metaData.getColumnName(columnIndex))) {
+                                return true;
+                        }
+                }
+                return false;
+        }
+
+        private boolean columnExists(Connection con, String tableName, String columnName) {
+                ResultSet rs = null;
+                try {
+                        DatabaseMetaData metaData = con.getMetaData();
+                        rs = metaData.getColumns(con.getCatalog(), null, tableName, null);
+                        while (rs.next()) {
+                                if (columnName.equalsIgnoreCase(rs.getString("COLUMN_NAME"))) {
+                                        return true;
+                                }
+                        }
+                } catch (SQLException e) {
+                        _log.warn("Unable to check for column {} on table {}", columnName, tableName, e);
+                } finally {
+                        SQLUtil.close(rs);
+                }
+                return false;
+        }
 }
