@@ -1190,16 +1190,23 @@ public class C_ItemUSe extends ClientBasePacket {
 																// scroll, lasta
 																// scroll?
 				L1BookMark bookm = pc.getBookMark(btele);
-				if (bookm != null) {
-					if (pc.getMap().isEscapable() || pc.isGm()) {
-						int newX = bookm.getLocX();
-						int newY = bookm.getLocY();
-						short mapId = bookm.getMapId();
+                                if (bookm != null) {
+                                        if (pc.getMap().isEscapable() || pc.isGm()) {
+                                                int newX = bookm.getLocX();
+                                                int newY = bookm.getLocY();
+                                                short mapId = bookm.getMapId();
 
-						if (itemId == 40086) {
-							for (L1PcInstance member : L1World.getInstance().getVisiblePlayer(pc)) {
-								if (pc.getMapId() == member.getMapId()
-										&& pc.getLocation().getTileLineDistance(member.getLocation()) <= 3
+                                                if (!pc.isGm() && mapId >= 101 && mapId <= 200
+                                                                && !ToiCharmUtil.hasRequiredCharmForFloor(pc, mapId)) {
+                                                        pc.sendPackets(new S_ServerMessage(276)); // You can't randomly teleport here.
+                                                        pc.sendPackets(new S_Paralysis(S_Paralysis.TYPE_TELEPORT_UNLOCK, false));
+                                                        return;
+                                                }
+
+                                                if (itemId == 40086) {
+                                                        for (L1PcInstance member : L1World.getInstance().getVisiblePlayer(pc)) {
+                                                                if (pc.getMapId() == member.getMapId()
+                                                                                && pc.getLocation().getTileLineDistance(member.getLocation()) <= 3
 										&& member.getClanid() == pc.getClanid() && pc.getClanid() != 0
 										&& member.getId() != pc.getId()) {
 									L1Teleport.teleport(member, newX, newY, mapId, 5, true);
