@@ -86,6 +86,12 @@ free to let us know, preferably on the IRC channel.  We always need additional
 help with programming, Lineage 1 domain knowledge (particularly with newer
 game content), and documentation.
 
+### Building
+
+l1j-en is built with [Apache Ant](https://ant.apache.org/). Install a recent
+JDK (we recommend JDK 11 or newer) and Ant, then run `ant` from the project
+root to compile the server and create `l1jen.jar`.
+
 ### License
 
 Distributed under the GNU General Public License, version 2.
