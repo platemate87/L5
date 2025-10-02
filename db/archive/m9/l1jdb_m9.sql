@@ -1,1 +1,0 @@
-INSERT INTO `commands` VALUES ('offlinekick', '200', 'L1OfflineShopDisconnect', 'Disconnect all active offline private shops.', '0');
