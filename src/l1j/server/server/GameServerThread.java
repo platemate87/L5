@@ -58,6 +58,7 @@ import l1j.server.server.datatables.NpcActionTable;
 import l1j.server.server.datatables.NpcChatTable;
 import l1j.server.server.datatables.NpcSpawnTable;
 import l1j.server.server.datatables.NpcTable;
+import l1j.server.server.datatables.OfflineShopTable;
 import l1j.server.server.datatables.PetTable;
 import l1j.server.server.datatables.PetTypeTable;
 import l1j.server.server.datatables.PolyTable;
@@ -293,8 +294,10 @@ public class GameServerThread {
 		NpcChatTable.getInstance();
 		LightSpawnTable.getInstance();
 		MailTable.getInstance();
-		L1MapLimiter.load();
+                L1MapLimiter.load();
 
-		_log.info("Database tables loaded successfully!");
-	}
+                OfflineShopTable.getInstance().load();
+
+                _log.info("Database tables loaded successfully!");
+        }
 }

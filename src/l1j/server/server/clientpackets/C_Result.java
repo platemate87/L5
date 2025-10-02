@@ -28,6 +28,7 @@ import l1j.server.Config;
 import l1j.server.server.Account;
 import l1j.server.server.datatables.IpTable;
 import l1j.server.server.datatables.NpcTable;
+import l1j.server.server.datatables.OfflineShopTable;
 import l1j.server.server.datatables.PetTable;
 import l1j.server.server.datatables.ShopTable;
 import l1j.server.server.log.LogDwarfOut;
@@ -573,8 +574,17 @@ public class C_Result extends ClientBasePacket {
 					}
 				}
 				targetPc.setTradingInPrivateShop(false);
-			}
-		} else if (resultType == 1 && size != 0 && isPrivateShop) { // private shop buying an item
+                        }
+                        if (targetPc != null && targetPc.isOfflineShop()) {
+                                try {
+                                        targetPc.saveInventory();
+                                        targetPc.save();
+                                } catch (Exception e) {
+                                        _log.error("Failed to save offline shop inventory for " + targetPc.getName(), e);
+                                }
+                                OfflineShopTable.getInstance().updateOfflineShop(targetPc);
+                        }
+                } else if (resultType == 1 && size != 0 && isPrivateShop) { // private shop buying an item
 			int count;
 			int order;
 			List<L1PrivateShopBuyList> buyList;
@@ -725,8 +735,17 @@ public class C_Result extends ClientBasePacket {
 					buyList.remove(i);
 				}
 			}
-			targetPc.setTradingInPrivateShop(false);
-		} else if ((resultType == 12) && (size != 0) && npcImpl.equalsIgnoreCase("L1Merchant")) {
+                        targetPc.setTradingInPrivateShop(false);
+                        if (targetPc != null && targetPc.isOfflineShop()) {
+                                try {
+                                        targetPc.saveInventory();
+                                        targetPc.save();
+                                } catch (Exception e) {
+                                        _log.error("Failed to save offline shop inventory for " + targetPc.getName(), e);
+                                }
+                                OfflineShopTable.getInstance().updateOfflineShop(targetPc);
+                        }
+                } else if ((resultType == 12) && (size != 0) && npcImpl.equalsIgnoreCase("L1Merchant")) {
 			int petCost, petCount, divisor, itemObjectId, itemCount = 0;
 
 			for (int i = 0; i < size; i++) {
