@@ -1213,7 +1213,9 @@ public class C_ItemUSe extends ClientBasePacket {
 						pc.sendPackets(new S_Paralysis(S_Paralysis.TYPE_TELEPORT_UNLOCK, false));
 					}
 				} else {
-					if (pc.getMap().isTeleportable() || pc.isGm() || ToiCharmUtil.hasRequiredCharmForCurrentFloor(pc)) {
+					boolean canRandomTeleport = pc.getMap().isTeleportable() || pc.isGm()
+							|| ToiCharmUtil.hasRequiredCharmForCurrentFloor(pc);
+					if (canRandomTeleport) {
 						L1Location newLocation = pc.getLocation().randomLocation(200, true);
 						int newX = newLocation.getX();
 						int newY = newLocation.getY();
