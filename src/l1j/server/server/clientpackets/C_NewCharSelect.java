@@ -59,11 +59,13 @@ public class C_NewCharSelect extends ClientBasePacket {
 			L1PcInstance pc = client.getActiveChar();
 			_log.info("Logout from: char=" + pc.getName() + " account=" + pc.getAccountName() + " host="
 					+ client.getHostname() + " Current Memory: " + SystemUtil.getUsedMemoryMB() + "MB RAM");
-			Client.quitGame(pc, client.getLastActiveCharName());
-			synchronized (pc) {
-				pc.logout();
-				client.setActiveChar(null);
-			}
+                        Client.quitGame(pc, client.getLastActiveCharName());
+                        synchronized (pc) {
+                                if (!pc.isOfflineShop()) {
+                                        pc.logout();
+                                }
+                                client.setActiveChar(null);
+                        }
 		} else {
 			_log.info("Disconnect Request From Account : " + client.getAccountName());
 		}
