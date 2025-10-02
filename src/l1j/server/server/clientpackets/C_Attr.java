@@ -53,6 +53,9 @@ import l1j.server.server.serverpackets.S_ChangeName;
 import l1j.server.server.serverpackets.S_CharTitle;
 import l1j.server.server.serverpackets.S_CharVisualUpdate;
 import l1j.server.server.serverpackets.S_ClanName;
+import l1j.server.server.serverpackets.S_HPUpdate;
+import l1j.server.server.serverpackets.S_MPUpdate;
+import l1j.server.server.serverpackets.S_OwnCharStatus;
 import l1j.server.server.serverpackets.S_OwnCharStatus2;
 import l1j.server.server.serverpackets.S_PacketBox;
 import l1j.server.server.serverpackets.S_Resurrection;
@@ -432,79 +435,76 @@ public class C_Attr extends ClientBasePacket {
 			}
 			break;
 		case 479:
-			if (readC() == 1) {
-				String s = readS();
-				if (!(pc.getLevel() - 50 > pc.getBonusStats())) {
-					return;
-				}
-				if (s.toLowerCase().equals("str".toLowerCase())) {
-					if (pc.getBaseStr() < 35) {
-						pc.addBaseStr((byte) 1);
-						pc.setBonusStats(pc.getBonusStats() + 1);
-						pc.sendPackets(new S_OwnCharStatus2(pc));
-						pc.sendPackets(new S_CharVisualUpdate(pc));
-						pc.save();
-					} else {
-						pc.sendPackets(new S_ServerMessage(481));
-					}
-				} else if (s.toLowerCase().equals("dex".toLowerCase())) {
-					if (pc.getBaseDex() < 35) {
-						pc.addBaseDex((byte) 1);
-						pc.resetBaseAc();
-						pc.setBonusStats(pc.getBonusStats() + 1);
-						pc.sendPackets(new S_OwnCharStatus2(pc));
-						pc.sendPackets(new S_CharVisualUpdate(pc));
-						pc.save();
-					} else {
-						pc.sendPackets(new S_ServerMessage(481));
-					}
-				} else if (s.toLowerCase().equals("con".toLowerCase())) {
-					if (pc.getBaseCon() < 35) {
-						pc.addBaseCon((byte) 1);
-						pc.setBonusStats(pc.getBonusStats() + 1);
-						pc.sendPackets(new S_OwnCharStatus2(pc));
-						pc.sendPackets(new S_CharVisualUpdate(pc));
-						pc.save();
-					} else {
-						pc.sendPackets(new S_ServerMessage(481));
-					}
-				} else if (s.toLowerCase().equals("int".toLowerCase())) {
-					if (pc.getBaseInt() < 35) {
-						pc.addBaseInt((byte) 1);
-						pc.setBonusStats(pc.getBonusStats() + 1);
-						pc.sendPackets(new S_OwnCharStatus2(pc));
-						pc.sendPackets(new S_CharVisualUpdate(pc));
-						pc.save();
-					} else {
-						pc.sendPackets(new S_ServerMessage(481));
-					}
-				} else if (s.toLowerCase().equals("wis".toLowerCase())) {
-					if (pc.getBaseWis() < 35) {
-						pc.addBaseWis((byte) 1);
-						pc.resetBaseMr();
-						pc.setBonusStats(pc.getBonusStats() + 1);
-						pc.sendPackets(new S_OwnCharStatus2(pc));
-						pc.sendPackets(new S_CharVisualUpdate(pc));
-						pc.save();
-					} else {
-						pc.sendPackets(new S_ServerMessage(481));
-					}
-				} else if (s.toLowerCase().equals("cha".toLowerCase())) {
-					if (pc.getBaseCha() < 35) {
-						pc.addBaseCha((byte) 1);
-						pc.setBonusStats(pc.getBonusStats() + 1);
-						pc.sendPackets(new S_OwnCharStatus2(pc));
-						pc.sendPackets(new S_CharVisualUpdate(pc));
-						pc.save();
-					} else {
-						pc.sendPackets(new S_ServerMessage(481));
-					}
-				}
-				int str = pc.getBaseStr();
-				int dex = pc.getBaseDex();
-				int con = pc.getBaseCon();
-				int Int = pc.getBaseInt();
-				int wis = pc.getBaseWis();
+                        if (readC() == 1) {
+                                String s = readS();
+                                if (!(pc.getLevel() - 50 > pc.getBonusStats())) {
+                                        return;
+                                }
+                                boolean updated = false;
+                                if (s.toLowerCase().equals("str".toLowerCase())) {
+                                        if (pc.getBaseStr() < 35) {
+                                                pc.addBaseStr((byte) 1);
+                                                pc.setBonusStats(pc.getBonusStats() + 1);
+                                                updated = true;
+                                        } else {
+                                                pc.sendPackets(new S_ServerMessage(481));
+                                        }
+                                } else if (s.toLowerCase().equals("dex".toLowerCase())) {
+                                        if (pc.getBaseDex() < 35) {
+                                                pc.addBaseDex((byte) 1);
+                                                pc.resetBaseAc();
+                                                pc.setBonusStats(pc.getBonusStats() + 1);
+                                                updated = true;
+                                        } else {
+                                                pc.sendPackets(new S_ServerMessage(481));
+                                        }
+                                } else if (s.toLowerCase().equals("con".toLowerCase())) {
+                                        if (pc.getBaseCon() < 35) {
+                                                pc.addBaseCon((byte) 1);
+                                                pc.setBonusStats(pc.getBonusStats() + 1);
+                                                updated = true;
+                                        } else {
+                                                pc.sendPackets(new S_ServerMessage(481));
+                                        }
+                                } else if (s.toLowerCase().equals("int".toLowerCase())) {
+                                        if (pc.getBaseInt() < 35) {
+                                                pc.addBaseInt((byte) 1);
+                                                pc.setBonusStats(pc.getBonusStats() + 1);
+                                                updated = true;
+                                        } else {
+                                                pc.sendPackets(new S_ServerMessage(481));
+                                        }
+                                } else if (s.toLowerCase().equals("wis".toLowerCase())) {
+                                        if (pc.getBaseWis() < 35) {
+                                                pc.addBaseWis((byte) 1);
+                                                pc.resetBaseMr();
+                                                pc.setBonusStats(pc.getBonusStats() + 1);
+                                                updated = true;
+                                        } else {
+                                                pc.sendPackets(new S_ServerMessage(481));
+                                        }
+                                } else if (s.toLowerCase().equals("cha".toLowerCase())) {
+                                        if (pc.getBaseCha() < 35) {
+                                                pc.addBaseCha((byte) 1);
+                                                pc.setBonusStats(pc.getBonusStats() + 1);
+                                                updated = true;
+                                        } else {
+                                                pc.sendPackets(new S_ServerMessage(481));
+                                        }
+                                }
+                                if (updated) {
+                                        pc.sendPackets(new S_OwnCharStatus(pc));
+                                        pc.sendPackets(new S_OwnCharStatus2(pc));
+                                        pc.sendPackets(new S_HPUpdate(pc.getCurrentHp(), pc.getMaxHp()));
+                                        pc.sendPackets(new S_MPUpdate(pc.getCurrentMp(), pc.getMaxMp()));
+                                        pc.sendPackets(new S_CharVisualUpdate(pc));
+                                        pc.save();
+                                }
+                                int str = pc.getBaseStr();
+                                int dex = pc.getBaseDex();
+                                int con = pc.getBaseCon();
+                                int Int = pc.getBaseInt();
+                                int wis = pc.getBaseWis();
 				int cha = pc.getBaseCha();
 				LogStatusUp lsu = new LogStatusUp();
 				lsu.storeLogStatusUp(pc, str, dex, con, Int, wis, cha);
