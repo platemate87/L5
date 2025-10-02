@@ -103,6 +103,7 @@ import l1j.server.server.serverpackets.S_UseAttackSkill;
 import l1j.server.server.templates.L1BookMark;
 import l1j.server.server.templates.L1Npc;
 import l1j.server.server.templates.L1Skill;
+import l1j.server.server.utils.ToiCharmUtil;
 import l1j.server.server.utils.collections.IntArrays;
 
 public class L1SkillUse {
@@ -2437,7 +2438,7 @@ public class L1SkillUse {
 								pc.sendPackets(new S_Paralysis(S_Paralysis.TYPE_TELEPORT_UNLOCK, false));
 							}
 						} else {
-							if (pc.getMap().isTeleportable() || pc.isGm()) {
+							if (pc.getMap().isTeleportable() || pc.isGm() || ToiCharmUtil.hasRequiredCharmForCurrentFloor(pc)) {
 								L1Location newLocation = pc.getLocation().randomLocation(200, true);
 								int newX = newLocation.getX();
 								int newY = newLocation.getY();
