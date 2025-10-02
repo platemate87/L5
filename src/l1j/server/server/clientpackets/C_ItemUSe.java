@@ -162,6 +162,7 @@ import l1j.server.server.templates.L1Npc;
 import l1j.server.server.templates.L1Skill;
 import l1j.server.server.types.Point;
 import l1j.server.server.utils.L1SpawnUtil;
+import l1j.server.server.utils.ToiCharmUtil;
 import l1j.server.server.utils.collections.IntArrays;
 
 public class C_ItemUSe extends ClientBasePacket {
@@ -1212,7 +1213,7 @@ public class C_ItemUSe extends ClientBasePacket {
 						pc.sendPackets(new S_Paralysis(S_Paralysis.TYPE_TELEPORT_UNLOCK, false));
 					}
 				} else {
-					if (pc.getMap().isTeleportable() || pc.isGm()) {
+					if (pc.getMap().isTeleportable() || pc.isGm() || ToiCharmUtil.hasRequiredCharmForCurrentFloor(pc)) {
 						L1Location newLocation = pc.getLocation().randomLocation(200, true);
 						int newX = newLocation.getX();
 						int newY = newLocation.getY();
