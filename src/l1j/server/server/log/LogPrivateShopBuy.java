@@ -54,11 +54,11 @@ public class LogPrivateShopBuy {
 			SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 			String fm = formatter.format(time.getTime());
 			pstm.setString(1, fm);
-			pstm.setString(2, pc.getNetConnection().getIp());
+                        pstm.setString(2, pc.getIpForLogging());
 			pstm.setString(3, pc.getAccountName());
 			pstm.setInt(4, pc.getId());
 			pstm.setString(5, pc.getName());
-			pstm.setString(6, target.getNetConnection().getIp());
+                        pstm.setString(6, target.getIpForLogging());
 			pstm.setString(7, target.getAccountName());
 			pstm.setInt(8, target.getId());
 			pstm.setString(9, target.getName());

@@ -716,7 +716,8 @@ public class L1PcInstance extends L1Character {
 
 	private boolean _isPinkName = false;
 
-	private boolean _isPrivateShop = false;
+    private boolean _isPrivateShop = false;
+    private boolean _isOfflineShop = false;
 
 	private boolean _isReserveGhost = false; //
 
@@ -845,7 +846,8 @@ public class L1PcInstance extends L1Character {
 
 	private byte _sex;
 
-	private byte[] _shopChat;
+    private byte[] _shopChat;
+    private String _lastKnownClientIp = "";
 
 	private boolean _showTradeChat = true;
 
@@ -1758,9 +1760,24 @@ public class L1PcInstance extends L1Character {
 		return _mpr;
 	}
 
-	public Client getNetConnection() {
-		return _netConnection;
-	}
+        public Client getNetConnection() {
+                return _netConnection;
+        }
+
+        public void setLastKnownClientIp(String ip) {
+                _lastKnownClientIp = ip == null ? "" : ip;
+        }
+
+        public String getLastKnownClientIp() {
+                return _lastKnownClientIp;
+        }
+
+        public String getIpForLogging() {
+                if (getNetConnection() != null) {
+                        return getNetConnection().getIp();
+                }
+                return _lastKnownClientIp;
+        }
 
 	public int getOnlineStatus() {
 		return _onlineStatus;
@@ -2111,9 +2128,13 @@ public class L1PcInstance extends L1Character {
 		return _isPinkName;
 	}
 
-	public boolean isPrivateShop() {
-		return _isPrivateShop;
-	}
+        public boolean isPrivateShop() {
+                return _isPrivateShop;
+        }
+
+        public boolean isOfflineShop() {
+                return _isOfflineShop;
+        }
 
 	public boolean isReserveGhost() {
 		return _isReserveGhost;
@@ -3169,9 +3190,12 @@ public class L1PcInstance extends L1Character {
 		_lastPkForElf = time;
 	}
 
-	public void setNetConnection(Client client) {
-		_netConnection = client;
-	}
+        public void setNetConnection(Client client) {
+                _netConnection = client;
+                if (client != null) {
+                        setLastKnownClientIp(client.getIp());
+                }
+        }
 
 	public void setOnlineStatus(int i) {
 		_onlineStatus = i;
@@ -3265,9 +3289,13 @@ public class L1PcInstance extends L1Character {
 		_potionMessages = potionMessages;
 	}
 
-	public void setPrivateShop(boolean flag) {
-		_isPrivateShop = flag;
-	}
+        public void setPrivateShop(boolean flag) {
+                _isPrivateShop = flag;
+        }
+
+        public void setOfflineShop(boolean flag) {
+                _isOfflineShop = flag;
+        }
 
 	public void setRegenState(int state) {
 		_mpRegen.setState(state);

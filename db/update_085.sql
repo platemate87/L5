@@ -5422,3 +5422,19 @@ INSERT INTO `dungeon` VALUES
 ('32799','33123','1019','Lindvior Raid','32735','32847','1019','Lindvior Raid','4'),
 ('32748','32868','1019','Lindvior Raid','32833','32896','1019','Lindvior Raid','7'),
 ('32725','32799','270','Ivory Tower Secret Lab','32808','32826','77','Oren Ivory Tower Floor 3','6');
+
+-- Offline shop persistence
+DROP TABLE IF EXISTS `character_offline_shop`;
+CREATE TABLE `character_offline_shop` (
+  `char_id` int(11) NOT NULL,
+  `char_name` varchar(45) NOT NULL,
+  `map_id` smallint(5) unsigned NOT NULL,
+  `locx` int(11) NOT NULL,
+  `locy` int(11) NOT NULL,
+  `heading` tinyint(3) unsigned NOT NULL,
+  `shop_chat` blob,
+  `sell_list` text,
+  `buy_list` text,
+  `client_ip` varchar(45) DEFAULT NULL,
+  PRIMARY KEY (`char_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
