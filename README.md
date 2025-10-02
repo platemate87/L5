@@ -7,6 +7,14 @@ See the project documentation on the
 [l1j-en project wiki](https://github.com/Sage-BR/L1J4Team/wiki) for general
 project info, the client connector, FAQ, and the setup guide.
 
+## Deployment notes
+
+Before rolling out builds that include HP/MP gain history persistence, apply
+the database migration in [`db/update_085.sql`](db/update_085.sql) so the
+`characters` table includes the `HpGainHistory` and `MpGainHistory` columns.
+Fresh installations should also run [`db/l1jdb_m10.sql`](db/l1jdb_m10.sql) to
+ensure the schema matches the code expectations.
+
 If you need any help, contact our (https://forum.4teambr.com/index.php?topic=39)
 
 **l1j-en created**
