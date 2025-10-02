@@ -413,6 +413,7 @@ public class MySqlCharacterStorage implements CharacterStorage {
 		} finally {
 			SQLUtil.close(pstm);
 			SQLUtil.close(con);
+                }
         }
 
         private boolean hasColumn(ResultSetMetaData metaData, String columnName) throws SQLException {
