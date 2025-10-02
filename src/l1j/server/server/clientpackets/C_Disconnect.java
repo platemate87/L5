@@ -38,11 +38,13 @@ public class C_Disconnect extends ClientBasePacket {
 			_log.info("Disconnect From: char=" + pc.getName() + " account=" + pc.getAccountName() + " host="
 					+ client.getHostname() + " Current Memory: " + SystemUtil.getUsedMemoryMB() + "MB RAM");
 
-			Client.quitGame(pc, client.getLastActiveCharName());
-			synchronized (pc) {
-				pc.logout();
-				client.setActiveChar(null);
-			}
+                        Client.quitGame(pc, client.getLastActiveCharName());
+                        synchronized (pc) {
+                                if (!pc.isOfflineShop()) {
+                                        pc.logout();
+                                }
+                                client.setActiveChar(null);
+                        }
 		} else {
 			_log.info("Disconnect From: account=" + client.getAccountName() + " host=" + client.getHostname()
 					+ " Current Memory: " + SystemUtil.getUsedMemoryMB() + "MB RAM");
