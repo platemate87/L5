@@ -315,8 +315,6 @@ public class PCommands {
                         return;
                 }
 
-                player.sendPackets(new S_SystemMessage("-- stats: " + player.getName() + " --"));
-
                 int er = player.getEr();
                 int wisMr = CalcStat.calcStatMr(player.getWis());
                 int hpr = player.getHpr() + player.getInventory().hpRegenPerTick();
@@ -325,10 +323,11 @@ public class PCommands {
                 CombatSnapshot snapshot = buildCombatSnapshot(player);
 
                 String formatted = String.format(
-                                "ER: %d | WIS bonus MR: %d | HPR: %d | MPR: %d | Hit: +%d | Dmg (Small) range: %d-%d | Dmg (Large) range: %d-%d | Base Magic Hit: +%d | Magic Damage Bonus: +%d | Magic Crit: %d",
-                                er, wisMr, hpr, mpr, snapshot.hitRate, snapshot.small.min, snapshot.small.max,
-                                snapshot.large.min, snapshot.large.max, player.getOriginalMagicHit(),
-                                player.getOriginalMagicDamage(), player.getOriginalMagicCritical());
+                                "%s | ER: %d | WIS bonus MR: %d | HPR: %d | MPR: %d | Hit: +%d | Dmg (Small): %d-%d | Dmg (Large): %d-%d | Base Magic Hit: +%d | Magic Damage Bonus: +%d | Magic Crit: %d",
+                                player.getName(), er, wisMr, hpr, mpr, snapshot.hitRate, snapshot.small.min,
+                                snapshot.small.max, snapshot.large.min, snapshot.large.max,
+                                player.getOriginalMagicHit(), player.getOriginalMagicDamage(),
+                                player.getOriginalMagicCritical());
 
                 player.sendPackets(new S_SystemMessage(formatted));
         }
