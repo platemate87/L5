@@ -162,7 +162,6 @@ import l1j.server.server.templates.L1Npc;
 import l1j.server.server.templates.L1Skill;
 import l1j.server.server.types.Point;
 import l1j.server.server.utils.L1SpawnUtil;
-import l1j.server.server.utils.ToiCharmUtil;
 import l1j.server.server.utils.collections.IntArrays;
 
 public class C_ItemUSe extends ClientBasePacket {
@@ -1196,8 +1195,7 @@ public class C_ItemUSe extends ClientBasePacket {
                                                 int newY = bookm.getLocY();
                                                 short mapId = bookm.getMapId();
 
-                                                if (!pc.isGm() && mapId >= 101 && mapId <= 200
-                                                                && !ToiCharmUtil.hasRequiredCharmForFloor(pc, mapId)) {
+                                                if (!pc.isGm() && mapId >= 101 && mapId <= 200) {
                                                         pc.sendPackets(new S_ServerMessage(276)); // You can't randomly teleport here.
                                                         pc.sendPackets(new S_Paralysis(S_Paralysis.TYPE_TELEPORT_UNLOCK, false));
                                                         return;
@@ -1220,8 +1218,7 @@ public class C_ItemUSe extends ClientBasePacket {
 						pc.sendPackets(new S_Paralysis(S_Paralysis.TYPE_TELEPORT_UNLOCK, false));
 					}
 				} else {
-					boolean canRandomTeleport = pc.getMap().isTeleportable() || pc.isGm()
-							|| ToiCharmUtil.hasRequiredCharmForCurrentFloor(pc);
+                                        boolean canRandomTeleport = pc.getMap().isTeleportable() || pc.isGm();
 					if (canRandomTeleport) {
 						L1Location newLocation = pc.getLocation().randomLocation(200, true);
 						int newX = newLocation.getX();
