@@ -16,3 +16,5 @@ CREATE TABLE `character_offline_shop` (
   PRIMARY KEY (`char_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+INSERT INTO `commands` VALUES ('offlinekick', '200', 'L1OfflineShopDisconnect', 'Disconnect all active offline private shops.', '0');
+

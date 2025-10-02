@@ -29,6 +29,10 @@ When toggled you will see HP bars over ALL things that have HPs in the server. U
 Will give you the X, Y and MapID you are currently at.
 }
 
+	.offlinekick {
+Disconnects every character running an offline private shop, forcing them to log back in to reopen it.
+}
+
 	.r (parameters) {
 Does the last command again with the parameters sent to .r
 }
