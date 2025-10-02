@@ -103,7 +103,6 @@ import l1j.server.server.serverpackets.S_UseAttackSkill;
 import l1j.server.server.templates.L1BookMark;
 import l1j.server.server.templates.L1Npc;
 import l1j.server.server.templates.L1Skill;
-import l1j.server.server.utils.ToiCharmUtil;
 import l1j.server.server.utils.collections.IntArrays;
 
 public class L1SkillUse {
@@ -2417,15 +2416,21 @@ public class L1SkillUse {
 						L1PcInstance pc = (L1PcInstance) cha;
 						L1BookMark bookm = pc.getBookMark(_bookmarkId);
 						if (bookm != null) {
-							if ((!pc.getMap().isTradeZone() && pc.getMap().isEscapable()) || pc.isGm()) {
-								int newX = bookm.getLocX();
-								int newY = bookm.getLocY();
-								short mapId = bookm.getMapId();
+                                                        if ((!pc.getMap().isTradeZone() && pc.getMap().isEscapable()) || pc.isGm()) {
+                                                                int newX = bookm.getLocX();
+                                                                int newY = bookm.getLocY();
+                                                                short mapId = bookm.getMapId();
 
-								if (_skillId == MASS_TELEPORT) {
-									List<L1PcInstance> clanMember = L1World.getInstance().getVisiblePlayer(pc);
-									for (L1PcInstance member : clanMember) {
-										if (pc.getLocation().getTileLineDistance(member.getLocation()) <= 3
+                                                                if (!pc.isGm() && mapId >= 101 && mapId <= 200) {
+                                                                        pc.sendPackets(new S_ServerMessage(276)); // You can't randomly teleport here.
+                                                                        pc.sendPackets(new S_Paralysis(S_Paralysis.TYPE_TELEPORT_UNLOCK, false));
+                                                                        return;
+                                                                }
+
+                                                                if (_skillId == MASS_TELEPORT) {
+                                                                        List<L1PcInstance> clanMember = L1World.getInstance().getVisiblePlayer(pc);
+                                                                        for (L1PcInstance member : clanMember) {
+                                                                                if (pc.getLocation().getTileLineDistance(member.getLocation()) <= 3
 												&& member.getClanid() == pc.getClanid() && pc.getClanid() != 0
 												&& member.getId() != pc.getId() && !member.isPrivateShop()) {
 											L1Teleport.teleport(member, newX, newY, mapId, 5, true);
@@ -2438,8 +2443,7 @@ public class L1SkillUse {
 								pc.sendPackets(new S_Paralysis(S_Paralysis.TYPE_TELEPORT_UNLOCK, false));
 							}
 						} else {
-							boolean canRandomTeleport = pc.getMap().isTeleportable() || pc.isGm()
-									|| ToiCharmUtil.hasRequiredCharmForCurrentFloor(pc);
+                                                        boolean canRandomTeleport = pc.getMap().isTeleportable() || pc.isGm();
 							if (canRandomTeleport) {
 								L1Location newLocation = pc.getLocation().randomLocation(200, true);
 								int newX = newLocation.getX();
