@@ -166,7 +166,9 @@ import l1j.server.server.utils.collections.IntArrays;
 
 public class C_ItemUSe extends ClientBasePacket {
 	private static final String C_ITEM_USE = "[C] C_ItemUSe";
-	private static Logger _log = LoggerFactory.getLogger(C_ItemUSe.class.getName());
+        private static Logger _log = LoggerFactory.getLogger(C_ItemUSe.class.getName());
+
+        private static final int[] TOI_RANDOM_TELEPORT_EXCLUDED_MAPS = { 116, 126, 136, 146, 156, 166, 176, 187, 197 };
 
 	public C_ItemUSe(byte abyte0[], Client client) throws Exception {
 		super(abyte0);
@@ -1218,7 +1220,10 @@ public class C_ItemUSe extends ClientBasePacket {
 						pc.sendPackets(new S_Paralysis(S_Paralysis.TYPE_TELEPORT_UNLOCK, false));
 					}
 				} else {
-                                        boolean canRandomTeleport = pc.getMap().isTeleportable() || pc.isGm();
+                                       boolean canRandomTeleport = pc.getMap().isTeleportable() || pc.isGm();
+                                       if (!pc.getMap().isTeleportable()) {
+                                               canRandomTeleport = canRandomTeleport || canRandomTeleportInToi(pc);
+                                       }
 					if (canRandomTeleport) {
 						L1Location newLocation = pc.getLocation().randomLocation(200, true);
 						int newX = newLocation.getX();
@@ -4753,7 +4758,62 @@ public class C_ItemUSe extends ClientBasePacket {
 		}
 	}
 
-	private static void cancelAbsoluteBarrier(L1PcInstance pc) {
+        private static boolean canRandomTeleportInToi(L1PcInstance pc) {
+                if (!Config.ALLOW_TOI_RANDOM_TELEPORT_WITH_CHARMS) {
+                        return false;
+                }
+                int mapId = pc.getMapId();
+                if (mapId >= 101 && mapId <= 105 || mapId >= 107 && mapId <= 109) {
+                        return true;
+                }
+                if (mapId < 111 || mapId > 199) {
+                        return false;
+                }
+                if (IntArrays.contains(TOI_RANDOM_TELEPORT_EXCLUDED_MAPS, mapId)) {
+                        return false;
+                }
+
+                int bandStart = (mapId / 10) * 10 + 1;
+                if (mapId < bandStart || mapId > bandStart + 8) {
+                        return false;
+                }
+
+                int requiredCharmId;
+                switch (bandStart) {
+                case 111:
+                        requiredCharmId = 40289;
+                        break;
+                case 121:
+                        requiredCharmId = 40290;
+                        break;
+                case 131:
+                        requiredCharmId = 40291;
+                        break;
+                case 141:
+                        requiredCharmId = 40292;
+                        break;
+                case 151:
+                        requiredCharmId = 40293;
+                        break;
+                case 161:
+                        requiredCharmId = 40294;
+                        break;
+                case 171:
+                        requiredCharmId = 40295;
+                        break;
+                case 181:
+                        requiredCharmId = 40296;
+                        break;
+                case 191:
+                        requiredCharmId = 40297;
+                        break;
+                default:
+                        return false;
+                }
+                return pc.getInventory().checkItem(requiredCharmId, 1);
+        }
+
+        private static void cancelAbsoluteBarrier(L1PcInstance pc) {
 		if (pc.hasSkillEffect(ABSOLUTE_BARRIER)) {
 			pc.killSkillEffectTimer(ABSOLUTE_BARRIER);
 			pc.startHpRegeneration();

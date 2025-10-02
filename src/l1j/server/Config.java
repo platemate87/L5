@@ -302,7 +302,8 @@ public final class Config {
 
 	public static int DEATH_MATCH_MIN_PLAYER = 2;
 
-	public static boolean USE_TOI_CHARM_ANYWHERE;
+        public static boolean USE_TOI_CHARM_ANYWHERE;
+        public static boolean ALLOW_TOI_RANDOM_TELEPORT_WITH_CHARMS;
 
 	public static boolean ELEMENTAL_ENCHANTING;
 
@@ -686,8 +687,10 @@ public final class Config {
 					.parseBoolean(serverSettings.getProperty("CharacterConfigInServerSide", "True"));
 			CONNECTIONS_PER_IP = Integer.parseInt(serverSettings.getProperty("ConnectionsPerIp", "2"));
 			LEVEL_DOWN_RANGE = Integer.parseInt(serverSettings.getProperty("LevelDownRange", "0"));
-			SEND_PACKET_BEFORE_TELEPORT = Boolean
-					.parseBoolean(serverSettings.getProperty("SendPacketBeforeTeleport", "False"));
+                    SEND_PACKET_BEFORE_TELEPORT = Boolean
+                                    .parseBoolean(serverSettings.getProperty("SendPacketBeforeTeleport", "False"));
+                    ALLOW_TOI_RANDOM_TELEPORT_WITH_CHARMS = Boolean.parseBoolean(
+                                    serverSettings.getProperty("AllowToiRandomTeleportWithCharms", "False"));
 			DETECT_DB_RESOURCE_LEAKS = Boolean
 					.parseBoolean(serverSettings.getProperty("EnableDatabaseResourceLeaksDetection", "False"));
 			DELAY_DISCONNECT = Integer.parseInt(serverSettings.getProperty("DelayDisconnect", "0"));
