@@ -1764,19 +1764,23 @@ public class L1PcInstance extends L1Character {
                 return _netConnection;
         }
 
-        public void setLastKnownClientIp(String ip) {
-                _lastKnownClientIp = ip == null ? "" : ip;
+	public void setLastKnownClientIp(String ip) {
+		_lastKnownClientIp = ip == null ? "" : ip;
         }
 
-        public String getLastKnownClientIp() {
-                return _lastKnownClientIp;
+	public String getLastKnownClientIp() {
+		return _lastKnownClientIp;
         }
 
-        public String getIpForLogging() {
-                if (getNetConnection() != null) {
-                        return getNetConnection().getIp();
+	public String getIpForLogging() {
+		Client connection = getNetConnection();
+		if (connection != null) {
+			String ip = connection.getIp();
+			if (ip != null && !ip.isEmpty()) {
+				return ip;
+                        }
                 }
-                return _lastKnownClientIp;
+		return _lastKnownClientIp;
         }
 
 	public int getOnlineStatus() {
