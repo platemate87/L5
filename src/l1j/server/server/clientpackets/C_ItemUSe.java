@@ -4759,6 +4759,10 @@ public class C_ItemUSe extends ClientBasePacket {
 	}
 
         private static boolean canRandomTeleportInToi(L1PcInstance pc) {
+                if (!Config.ENABLE_TOI_RANDOM_TELEPORT) {
+                        return false;
+                }
+
                 int mapId = pc.getMapId();
                 if (mapId >= 101 && mapId <= 105 || mapId >= 107 && mapId <= 109) {
                         return true;

@@ -152,7 +152,8 @@ public final class Config {
 
 	public static int LEVEL_DOWN_RANGE;
 
-	public static boolean SEND_PACKET_BEFORE_TELEPORT;
+        public static boolean SEND_PACKET_BEFORE_TELEPORT;
+        public static boolean ENABLE_TOI_RANDOM_TELEPORT;
 
 	public static boolean DETECT_DB_RESOURCE_LEAKS;
 
@@ -686,8 +687,10 @@ public final class Config {
 					.parseBoolean(serverSettings.getProperty("CharacterConfigInServerSide", "True"));
 			CONNECTIONS_PER_IP = Integer.parseInt(serverSettings.getProperty("ConnectionsPerIp", "2"));
 			LEVEL_DOWN_RANGE = Integer.parseInt(serverSettings.getProperty("LevelDownRange", "0"));
-			SEND_PACKET_BEFORE_TELEPORT = Boolean
-					.parseBoolean(serverSettings.getProperty("SendPacketBeforeTeleport", "False"));
+                        SEND_PACKET_BEFORE_TELEPORT = Boolean
+                                        .parseBoolean(serverSettings.getProperty("SendPacketBeforeTeleport", "False"));
+                        ENABLE_TOI_RANDOM_TELEPORT = Boolean
+                                        .parseBoolean(serverSettings.getProperty("EnableToiRandomTeleport", "True"));
 			DETECT_DB_RESOURCE_LEAKS = Boolean
 					.parseBoolean(serverSettings.getProperty("EnableDatabaseResourceLeaksDetection", "False"));
 			DELAY_DISCONNECT = Integer.parseInt(serverSettings.getProperty("DelayDisconnect", "0"));
