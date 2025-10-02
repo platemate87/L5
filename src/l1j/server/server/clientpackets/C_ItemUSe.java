@@ -139,6 +139,10 @@ import l1j.server.server.serverpackets.S_Message_YN;
 import l1j.server.server.serverpackets.S_NPCTalkReturn;
 import l1j.server.server.serverpackets.S_OwnCharAttrDef;
 import l1j.server.server.serverpackets.S_OwnCharStatus;
+import l1j.server.server.serverpackets.S_CharVisualUpdate;
+import l1j.server.server.serverpackets.S_HPUpdate;
+import l1j.server.server.serverpackets.S_MPUpdate;
+import l1j.server.server.serverpackets.S_OwnCharStatus;
 import l1j.server.server.serverpackets.S_OwnCharStatus2;
 import l1j.server.server.serverpackets.S_PacketBox;
 import l1j.server.server.serverpackets.S_Paralysis;
@@ -2629,15 +2633,17 @@ public class C_ItemUSe extends ClientBasePacket {
 		case Str:
 			pc.addBaseStr(amount);
 			break;
-		case Dex:
-			pc.addBaseDex(amount);
-			break;
-		case Con:
-			pc.addBaseCon(amount);
-			break;
-		case Wis:
-			pc.addBaseWis(amount);
-			break;
+                case Dex:
+                        pc.addBaseDex(amount);
+                        pc.resetBaseAc();
+                        break;
+                case Con:
+                        pc.addBaseCon(amount);
+                        break;
+                case Wis:
+                        pc.addBaseWis(amount);
+                        pc.resetBaseMr();
+                        break;
 		case Int:
 			pc.addBaseInt(amount);
 			break;
@@ -2662,12 +2668,16 @@ public class C_ItemUSe extends ClientBasePacket {
 			return;
 		}
 
-		addStat(pc, attribute, (byte) 1);
-		pc.setElixirStats(pc.getElixirStats() + 1);
-		pc.getInventory().removeItem(elixir, 1);
-		pc.sendPackets(new S_OwnCharStatus2(pc));
-		pc.save();
-	}
+                addStat(pc, attribute, (byte) 1);
+                pc.setElixirStats(pc.getElixirStats() + 1);
+                pc.getInventory().removeItem(elixir, 1);
+                pc.sendPackets(new S_OwnCharStatus(pc));
+                pc.sendPackets(new S_OwnCharStatus2(pc));
+                pc.sendPackets(new S_HPUpdate(pc.getCurrentHp(), pc.getMaxHp()));
+                pc.sendPackets(new S_MPUpdate(pc.getCurrentMp(), pc.getMaxMp()));
+                pc.sendPackets(new S_CharVisualUpdate(pc));
+                pc.save();
+        }
 
 	private static boolean validClass(final L1PcInstance pc, final L1Item item) {
 		return pc.isGm() || pc.isCrown() && item.isUseRoyal() || pc.isKnight() && item.isUseKnight()

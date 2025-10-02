@@ -571,9 +571,129 @@ public class L1PcInstance extends L1Character {
 
 	private byte _baseInt = 0;
 
-	private short _baseMaxHp = 0;
+        private short _baseMaxHp = 0;
 
-	private short _baseMaxMp = 0;
+        private short _baseMaxMp = 0;
+
+        private static class HpGainEntry {
+                private short randomComponent;
+                private int baseCon;
+                private int originalCon;
+
+                HpGainEntry(short randomComponent, int baseCon, int originalCon) {
+                        this.randomComponent = randomComponent;
+                        this.baseCon = baseCon;
+                        this.originalCon = originalCon;
+                }
+
+                public short getRandomComponent() {
+                        return randomComponent;
+                }
+
+                public void setRandomComponent(short randomComponent) {
+                        this.randomComponent = randomComponent;
+                }
+
+                public int getBaseCon() {
+                        return baseCon;
+                }
+
+                public void setBaseCon(int baseCon) {
+                        this.baseCon = baseCon;
+                }
+
+                public int getOriginalCon() {
+                        return originalCon;
+                }
+
+                public void setOriginalCon(int originalCon) {
+                        this.originalCon = originalCon;
+                }
+
+                public String serialize() {
+                        return Short.toString(randomComponent) + ":" + baseCon + ":" + originalCon;
+                }
+
+                public static HpGainEntry deserialize(String token) {
+                        if (token == null || token.isEmpty()) {
+                                return null;
+                        }
+                        String[] pieces = token.split(":");
+                        if (pieces.length != 3) {
+                                return null;
+                        }
+                        try {
+                                short random = Short.parseShort(pieces[0]);
+                                int base = Integer.parseInt(pieces[1]);
+                                int original = Integer.parseInt(pieces[2]);
+                                return new HpGainEntry(random, base, original);
+                        } catch (NumberFormatException e) {
+                                return null;
+                        }
+                }
+        }
+
+        private static class MpGainEntry {
+                private short randomComponent;
+                private int baseWis;
+                private int originalWis;
+
+                MpGainEntry(short randomComponent, int baseWis, int originalWis) {
+                        this.randomComponent = randomComponent;
+                        this.baseWis = baseWis;
+                        this.originalWis = originalWis;
+                }
+
+                public short getRandomComponent() {
+                        return randomComponent;
+                }
+
+                public void setRandomComponent(short randomComponent) {
+                        this.randomComponent = randomComponent;
+                }
+
+                public int getBaseWis() {
+                        return baseWis;
+                }
+
+                public void setBaseWis(int baseWis) {
+                        this.baseWis = baseWis;
+                }
+
+                public int getOriginalWis() {
+                        return originalWis;
+                }
+
+                public void setOriginalWis(int originalWis) {
+                        this.originalWis = originalWis;
+                }
+
+                public String serialize() {
+                        return Short.toString(randomComponent) + ":" + baseWis + ":" + originalWis;
+                }
+
+                public static MpGainEntry deserialize(String token) {
+                        if (token == null || token.isEmpty()) {
+                                return null;
+                        }
+                        String[] pieces = token.split(":");
+                        if (pieces.length != 3) {
+                                return null;
+                        }
+                        try {
+                                short random = Short.parseShort(pieces[0]);
+                                int base = Integer.parseInt(pieces[1]);
+                                int original = Integer.parseInt(pieces[2]);
+                                return new MpGainEntry(random, base, original);
+                        } catch (NumberFormatException e) {
+                                return null;
+                        }
+                }
+        }
+
+        private final List<HpGainEntry> _hpGainHistory = new ArrayList<>();
+
+        private final List<MpGainEntry> _mpGainHistory = new ArrayList<>();
 
 	private int _baseMr = 0;
 
@@ -893,15 +1013,25 @@ public class L1PcInstance extends L1Character {
 
 	private int invisDelayCounter = 0;
 
-	private boolean _excludeInitialized = false;
+        private boolean _excludeInitialized = false;
+
+        private boolean _suspendHpMpRecalculation = false;
 
 	public boolean isExcludeInitialized() {
 		return _excludeInitialized;
 	}
 
-	public void setExcludeInitialised() {
-		_excludeInitialized = true;
-	}
+        public void setExcludeInitialised() {
+                _excludeInitialized = true;
+        }
+
+        public void setSuspendHpMpRecalculation(boolean flag) {
+                _suspendHpMpRecalculation = flag;
+        }
+
+        public boolean isSuspendHpMpRecalculation() {
+                return _suspendHpMpRecalculation;
+        }
 
 	private ArrayList<Integer> skillList = new ArrayList<>();
 	private L1NpcInstance spoofMob = null;
@@ -941,16 +1071,28 @@ public class L1PcInstance extends L1Character {
 		_baseCha = i;
 	}
 
-	public void addBaseCon(byte i) {
-		i += _baseCon;
-		if (i >= 127) {
-			i = 127;
-		} else if (i < 1) {
-			i = 1;
-		}
-		addCon((byte) (i - _baseCon));
-		_baseCon = i;
-	}
+        public void addBaseCon(byte i) {
+                int newBase = _baseCon + i;
+                if (newBase >= 127) {
+                        newBase = 127;
+                } else if (newBase < 1) {
+                        newBase = 1;
+                }
+                int diff = newBase - _baseCon;
+                if (diff == 0) {
+                        return;
+                }
+                addCon(diff);
+                _baseCon = (byte) newBase;
+                if (_suspendHpMpRecalculation) {
+                        return;
+                }
+                setOriginalCon(_baseCon);
+                updateOriginalConDerived();
+                recalcBaseHpMpFromStats();
+                setCurrentHp(getMaxHp());
+                setCurrentMp(getMaxMp());
+        }
 
 	public void addBaseDex(byte i) {
 		i += _baseDex;
@@ -985,11 +1127,11 @@ public class L1PcInstance extends L1Character {
 		_baseMaxHp = i;
 	}
 
-	public void addBaseMaxMp(short i) {
-		i += _baseMaxMp;
-		if (i >= 32767) {
-			i = 32767;
-		} else if (i < 0) {
+        public void addBaseMaxMp(short i) {
+                i += _baseMaxMp;
+                if (i >= 32767) {
+                        i = 32767;
+                } else if (i < 0) {
 			i = 0;
 		}
 		addMaxMp(i - _baseMaxMp);
@@ -1007,16 +1149,368 @@ public class L1PcInstance extends L1Character {
 		_baseStr = i;
 	}
 
-	public void addBaseWis(byte i) {
-		i += _baseWis;
-		if (i >= 127) {
-			i = 127;
-		} else if (i < 1) {
-			i = 1;
-		}
-		addWis((byte) (i - _baseWis));
-		_baseWis = i;
-	}
+        public void addBaseWis(byte i) {
+                int newBase = _baseWis + i;
+                if (newBase >= 127) {
+                        newBase = 127;
+                } else if (newBase < 1) {
+                        newBase = 1;
+                }
+                int diff = newBase - _baseWis;
+                if (diff == 0) {
+                        return;
+                }
+                addWis(diff);
+                _baseWis = (byte) newBase;
+                if (_suspendHpMpRecalculation) {
+                        return;
+                }
+                setOriginalWis(_baseWis);
+                updateOriginalWisDerived();
+                recalcBaseHpMpFromStats();
+                setCurrentHp(getMaxHp());
+                setCurrentMp(getMaxMp());
+        }
+
+        public String getHpGainHistoryData() {
+                if (_hpGainHistory.isEmpty()) {
+                        return "";
+                }
+                StringBuilder sb = new StringBuilder();
+                for (HpGainEntry entry : _hpGainHistory) {
+                        if (entry == null) {
+                                continue;
+                        }
+                        if (sb.length() > 0) {
+                                sb.append(',');
+                        }
+                        sb.append(entry.serialize());
+                }
+                return sb.toString();
+        }
+
+        public void loadHpGainHistory(String data) {
+                _hpGainHistory.clear();
+                if (data == null || data.isEmpty()) {
+                        return;
+                }
+                String[] tokens = data.split(",");
+                for (String token : tokens) {
+                        HpGainEntry entry = HpGainEntry.deserialize(token.trim());
+                        if (entry != null) {
+                                _hpGainHistory.add(entry);
+                        }
+                }
+        }
+
+        public String getMpGainHistoryData() {
+                if (_mpGainHistory.isEmpty()) {
+                        return "";
+                }
+                StringBuilder sb = new StringBuilder();
+                for (MpGainEntry entry : _mpGainHistory) {
+                        if (entry == null) {
+                                continue;
+                        }
+                        if (sb.length() > 0) {
+                                sb.append(',');
+                        }
+                        sb.append(entry.serialize());
+                }
+                return sb.toString();
+        }
+
+        public void loadMpGainHistory(String data) {
+                _mpGainHistory.clear();
+                if (data == null || data.isEmpty()) {
+                        return;
+                }
+                String[] tokens = data.split(",");
+                for (String token : tokens) {
+                        MpGainEntry entry = MpGainEntry.deserialize(token.trim());
+                        if (entry != null) {
+                                _mpGainHistory.add(entry);
+                        }
+                }
+        }
+
+        private static int calcConBonus(int con) {
+                return Math.max(0, con - 15);
+        }
+
+        private static int calcWisSeedBonus(int wis) {
+                if (wis >= 7 && wis <= 9) {
+                        return 0;
+                } else if (wis >= 10 && wis <= 14) {
+                        return 1;
+                } else if (wis >= 15 && wis <= 20) {
+                        return 2;
+                } else if (wis >= 21 && wis <= 24) {
+                        return 3;
+                } else if (wis >= 25 && wis <= 28) {
+                        return 4;
+                } else if (wis >= 29 && wis <= 32) {
+                        return 5;
+                } else if (wis >= 33) {
+                        return 6;
+                }
+                return 0;
+        }
+
+        private int getClassMaxHp() {
+                switch (getType()) {
+                case 0:
+                        return Config.PRINCE_MAX_HP;
+                case 1:
+                        return Config.KNIGHT_MAX_HP;
+                case 2:
+                        return Config.ELF_MAX_HP;
+                case 3:
+                        return Config.WIZARD_MAX_HP;
+                case 4:
+                        return Config.DARKELF_MAX_HP;
+                case 5:
+                        return Config.DRAGONKNIGHT_MAX_HP;
+                case 6:
+                        return Config.ILLUSIONIST_MAX_HP;
+                default:
+                        return Config.PRINCE_MAX_HP;
+                }
+        }
+
+        private int getClassMaxMp() {
+                switch (getType()) {
+                case 0:
+                        return Config.PRINCE_MAX_MP;
+                case 1:
+                        return Config.KNIGHT_MAX_MP;
+                case 2:
+                        return Config.ELF_MAX_MP;
+                case 3:
+                        return Config.WIZARD_MAX_MP;
+                case 4:
+                        return Config.DARKELF_MAX_MP;
+                case 5:
+                        return Config.DRAGONKNIGHT_MAX_MP;
+                case 6:
+                        return Config.ILLUSIONIST_MAX_MP;
+                default:
+                        return Config.PRINCE_MAX_MP;
+                }
+        }
+
+        private int sumHpHistoryTotals() {
+                if (_hpGainHistory.isEmpty()) {
+                        return 0;
+                }
+                int sum = 0;
+                L1ClassFeature features = getClassFeature();
+                for (HpGainEntry entry : _hpGainHistory) {
+                        if (entry == null) {
+                                continue;
+                        }
+                        int random = entry.getRandomComponent();
+                        int statBonus = calcConBonus(entry.getBaseCon());
+                        int originalBonus = features != null ? features.getOriginalHpBonus(entry.getOriginalCon()) : 0;
+                        sum += Math.max(0, random + statBonus + originalBonus);
+                }
+                return sum;
+        }
+
+        private int sumMpHistoryTotals() {
+                if (_mpGainHistory.isEmpty()) {
+                        return 0;
+                }
+                int sum = 0;
+                L1ClassFeature features = getClassFeature();
+                for (MpGainEntry entry : _mpGainHistory) {
+                        if (entry == null) {
+                                continue;
+                        }
+                        int random = entry.getRandomComponent();
+                        int statBonus = calcWisSeedBonus(entry.getBaseWis());
+                        int originalBonus = features != null ? features.getOriginalMpBonus(entry.getOriginalWis()) : 0;
+                        sum += Math.max(0, random + statBonus + originalBonus);
+                }
+                return sum;
+        }
+
+        private void recordHpGain(int level, short totalGain) {
+                if (level < 10) {
+                        return;
+                }
+                int index = level - 10;
+                while (_hpGainHistory.size() <= index) {
+                        _hpGainHistory.add(null);
+                }
+                int statBonus = calcConBonus(getBaseCon());
+                L1ClassFeature features = getClassFeature();
+                int originalBonus = features != null ? features.getOriginalHpBonus(getOriginalCon()) : 0;
+                int random = totalGain - statBonus - originalBonus;
+                if (random < 0) {
+                        random = 0;
+                }
+                HpGainEntry entry = new HpGainEntry((short) Math.min(Short.MAX_VALUE, Math.max(Short.MIN_VALUE, random)),
+                                getBaseCon(), getOriginalCon());
+                _hpGainHistory.set(index, entry);
+        }
+
+        private void recordMpGain(int level, short totalGain) {
+                if (level < 10) {
+                        return;
+                }
+                int index = level - 10;
+                while (_mpGainHistory.size() <= index) {
+                        _mpGainHistory.add(null);
+                }
+                int statBonus = calcWisSeedBonus(getBaseWis());
+                L1ClassFeature features = getClassFeature();
+                int originalBonus = features != null ? features.getOriginalMpBonus(getOriginalWis()) : 0;
+                int random = totalGain - statBonus - originalBonus;
+                if (random < 0) {
+                        random = 0;
+                }
+                MpGainEntry entry = new MpGainEntry((short) Math.min(Short.MAX_VALUE, Math.max(Short.MIN_VALUE, random)),
+                                getBaseWis(), getOriginalWis());
+                _mpGainHistory.set(index, entry);
+        }
+
+        public void recalcBaseHpMpFromStats() {
+                L1ClassFeature features = getClassFeature();
+                if (features == null) {
+                        return;
+                }
+
+                int startingHp = features.getStartingHp();
+                int startingMp = features.getStartingMp(getBaseWis());
+
+                int oldBaseHp = _baseMaxHp;
+                int oldBaseMp = _baseMaxMp;
+
+                int oldHpHistoryTotal = sumHpHistoryTotals();
+                int oldMpHistoryTotal = sumMpHistoryTotals();
+
+                int earlyHpContribution = Math.max(0, oldBaseHp - oldHpHistoryTotal - startingHp);
+                int earlyMpContribution = Math.max(0, oldBaseMp - oldMpHistoryTotal - startingMp);
+
+                int newBaseHp = startingHp + earlyHpContribution;
+                int newBaseMp = startingMp + earlyMpContribution;
+
+                int newHpStatBonus = calcConBonus(getBaseCon());
+                int newHpOriginalBonus = features.getOriginalHpBonus(getOriginalCon());
+                int newMpStatBonus = calcWisSeedBonus(getBaseWis());
+                int newMpOriginalBonus = features.getOriginalMpBonus(getOriginalWis());
+
+                int maxHp = getClassMaxHp();
+                int maxMp = getClassMaxMp();
+
+                for (int i = 0; i < _hpGainHistory.size(); i++) {
+                        HpGainEntry entry = _hpGainHistory.get(i);
+                        if (entry == null) {
+                                continue;
+                        }
+                        int gain = entry.getRandomComponent() + newHpStatBonus + newHpOriginalBonus;
+                        if (gain < 0) {
+                                gain = 0;
+                        }
+                        if (newBaseHp + gain > maxHp) {
+                                gain = maxHp - newBaseHp;
+                        }
+                        if (gain < 0) {
+                                gain = 0;
+                        }
+                        newBaseHp += gain;
+                        entry.setBaseCon(getBaseCon());
+                        entry.setOriginalCon(getOriginalCon());
+                }
+
+                for (int i = 0; i < _mpGainHistory.size(); i++) {
+                        MpGainEntry entry = _mpGainHistory.get(i);
+                        if (entry == null) {
+                                continue;
+                        }
+                        int gain = entry.getRandomComponent() + newMpStatBonus + newMpOriginalBonus;
+                        if (gain < 0) {
+                                gain = 0;
+                        }
+                        if (newBaseMp + gain > maxMp) {
+                                gain = maxMp - newBaseMp;
+                        }
+                        if (gain < 0) {
+                                gain = 0;
+                        }
+                        newBaseMp += gain;
+                        entry.setBaseWis(getBaseWis());
+                        entry.setOriginalWis(getOriginalWis());
+                }
+
+                addBaseMaxHp((short) (newBaseHp - oldBaseHp));
+                addBaseMaxMp((short) (newBaseMp - oldBaseMp));
+        }
+
+        private short removeHpGainForLevel(int level) {
+                if (level < 10) {
+                        return CalcStat.calcStatHp(getType(), 0, getBaseCon(), getOriginalHpup());
+                }
+                int index = level - 10;
+                if (index < 0 || index >= _hpGainHistory.size()) {
+                        return CalcStat.calcStatHp(getType(), 0, getBaseCon(), getOriginalHpup());
+                }
+                HpGainEntry entry = _hpGainHistory.remove(index);
+                if (entry == null) {
+                        return CalcStat.calcStatHp(getType(), 0, getBaseCon(), getOriginalHpup());
+                }
+                L1ClassFeature features = getClassFeature();
+                int statBonus = calcConBonus(entry.getBaseCon());
+                int originalBonus = features != null ? features.getOriginalHpBonus(entry.getOriginalCon()) : 0;
+                int total = entry.getRandomComponent() + statBonus + originalBonus;
+                if (total < 0) {
+                        total = 0;
+                }
+                return (short) Math.min(Short.MAX_VALUE, total);
+        }
+
+        private short removeMpGainForLevel(int level) {
+                if (level < 10) {
+                        return CalcStat.calcStatMp(getType(), 0, getBaseWis(), getOriginalMpup());
+                }
+                int index = level - 10;
+                if (index < 0 || index >= _mpGainHistory.size()) {
+                        return CalcStat.calcStatMp(getType(), 0, getBaseWis(), getOriginalMpup());
+                }
+                MpGainEntry entry = _mpGainHistory.remove(index);
+                if (entry == null) {
+                        return CalcStat.calcStatMp(getType(), 0, getBaseWis(), getOriginalMpup());
+                }
+                L1ClassFeature features = getClassFeature();
+                int statBonus = calcWisSeedBonus(entry.getBaseWis());
+                int originalBonus = features != null ? features.getOriginalMpBonus(entry.getOriginalWis()) : 0;
+                int total = entry.getRandomComponent() + statBonus + originalBonus;
+                if (total < 0) {
+                        total = 0;
+                }
+                return (short) Math.min(Short.MAX_VALUE, total);
+        }
+
+        private void updateOriginalConDerived() {
+                L1ClassFeature features = getClassFeature();
+                if (features == null) {
+                        return;
+                }
+                _originalConWeightReduction = features.getOriginalConWeightReduction(getOriginalCon());
+                _originalHpup = features.getOriginalHpBonus(getOriginalCon());
+                _originalHpr = features.getOriginalHpRegen(getOriginalCon());
+        }
+
+        private void updateOriginalWisDerived() {
+                L1ClassFeature features = getClassFeature();
+                if (features == null) {
+                        return;
+                }
+                _originalMpup = features.getOriginalMpBonus(getOriginalWis());
+                _originalMpr = features.getOriginalMpRegen(getOriginalWis());
+                _originalMr = features.getOriginalMR(getOriginalWis());
+        }
 
 	public void addBookMark(L1BookMark book) {
 		_bookmarks.add(book);
@@ -3681,12 +4175,17 @@ public class L1PcInstance extends L1Character {
 	private void levelDown(int gap) {
 		resetLevel();
 
-		for (int i = 0; i > gap; i--) {
-			short randomHp = CalcStat.calcStatHp(getType(), 0, getBaseCon(), getOriginalHpup());
-			short randomMp = CalcStat.calcStatMp(getType(), 0, getBaseWis(), getOriginalMpup());
-			addBaseMaxHp((short) -randomHp);
-			addBaseMaxMp((short) -randomMp);
-		}
+                int levelsLost = -gap;
+                if (levelsLost > 0) {
+                        int newLevel = getLevel();
+                        int previousLevel = newLevel + levelsLost;
+                        for (int level = previousLevel; level > newLevel; level--) {
+                                short hpLoss = removeHpGainForLevel(level);
+                                short mpLoss = removeMpGainForLevel(level);
+                                addBaseMaxHp((short) -hpLoss);
+                                addBaseMaxMp((short) -mpLoss);
+                        }
+                }
 		resetBaseHitup();
 		resetBaseDmgup();
 		resetBaseAc();
@@ -3725,12 +4224,16 @@ public class L1PcInstance extends L1Character {
 			}
 		}
 
-		for (int i = 0; i < gap; i++) {
-			short randomHp = CalcStat.calcStatHp(getType(), getBaseMaxHp(), getBaseCon(), getOriginalHpup());
-			short randomMp = CalcStat.calcStatMp(getType(), getBaseMaxMp(), getBaseWis(), getOriginalMpup());
-			addBaseMaxHp(randomHp);
-			addBaseMaxMp(randomMp);
-		}
+                int targetLevel = getLevel();
+                for (int i = 0; i < gap; i++) {
+                        int appliedLevel = targetLevel - gap + 1 + i;
+                        short randomHp = CalcStat.calcStatHp(getType(), getBaseMaxHp(), getBaseCon(), getOriginalHpup());
+                        short randomMp = CalcStat.calcStatMp(getType(), getBaseMaxMp(), getBaseWis(), getOriginalMpup());
+                        recordHpGain(appliedLevel, randomHp);
+                        recordMpGain(appliedLevel, randomMp);
+                        addBaseMaxHp(randomHp);
+                        addBaseMaxMp(randomMp);
+                }
 		resetBaseHitup();
 		resetBaseDmgup();
 		resetBaseAc();
