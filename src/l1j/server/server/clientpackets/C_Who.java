@@ -19,6 +19,7 @@
 package l1j.server.server.clientpackets;
 
 import l1j.server.Config;
+import l1j.server.server.datatables.OfflineShopTable;
 import l1j.server.server.model.L1World;
 import l1j.server.server.model.Instance.L1PcInstance;
 import l1j.server.server.network.Client;
@@ -46,9 +47,17 @@ public class C_Who extends ClientBasePacket {
 			S_WhoCharinfo s_whocharinfo = new S_WhoCharinfo(find);
 			pc.sendPackets(s_whocharinfo);
 		} else {
-			if (Config.ALT_WHO_COMMAND) {
-				String amount = String.valueOf(L1World.getInstance().getAllPlayers().size());
-				S_WhoAmount s_whoamount = new S_WhoAmount(amount);
+                        if (Config.ALT_WHO_COMMAND) {
+                                int onlinePlayers = 0;
+                                for (L1PcInstance player : L1World.getInstance().getAllPlayers()) {
+                                        if (!player.isOfflineShop()) {
+                                                onlinePlayers++;
+                                        }
+                                }
+                                int offlineShops = OfflineShopTable.getInstance().getOfflineShops().size();
+                                String amount = String.format("Online Players: %d + Offline Shops: %d", onlinePlayers,
+                                                offlineShops);
+                                S_WhoAmount s_whoamount = new S_WhoAmount(amount);
 				pc.sendPackets(s_whoamount);
 			}
 		}
