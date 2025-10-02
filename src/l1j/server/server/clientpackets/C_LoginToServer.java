@@ -60,6 +60,7 @@ import l1j.server.server.controllers.WarTimeController;
 import l1j.server.server.datatables.CharacterTable;
 import l1j.server.server.datatables.GetBackRestartTable;
 import l1j.server.server.datatables.LogReporterTable;
+import l1j.server.server.datatables.OfflineShopTable;
 import l1j.server.server.datatables.SkillTable;
 import l1j.server.server.log.LogIP;
 import l1j.server.server.model.Getback;
@@ -125,12 +126,15 @@ public class C_LoginToServer extends ClientBasePacket {
 			client.close();
 			return;
 		}
-		L1PcInstance pc = L1PcInstance.load(charName);
-		if (pc == null || !login.equals(pc.getAccountName())) {
-			_log.info("Invalid login request=" + charName + " account=" + login + " host=" + client.getHostname());
-			client.close();
-			return;
-		}
+                L1PcInstance pc = L1PcInstance.load(charName);
+                if (pc == null || !login.equals(pc.getAccountName())) {
+                        _log.info("Invalid login request=" + charName + " account=" + login + " host=" + client.getHostname());
+                        client.close();
+                        return;
+                }
+
+                OfflineShopTable.getInstance().removeOfflineShop(pc.getId());
+                pc.setOfflineShop(false);
 
 		// auto-run any auto-run commands the user has access to
 		for (L1Command command : L1Commands.availableCommandList(pc.getAccessLevel().getLevel())) {

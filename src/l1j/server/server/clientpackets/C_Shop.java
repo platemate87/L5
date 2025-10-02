@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import l1j.server.Config;
 import l1j.server.server.Account;
 import l1j.server.server.ActionCodes;
+import l1j.server.server.datatables.OfflineShopTable;
 import l1j.server.server.datatables.IpTable;
 import l1j.server.server.model.L1World;
 import l1j.server.server.model.Instance.L1ItemInstance;
@@ -202,22 +203,26 @@ public class C_Shop extends ClientBasePacket {
 			}
 
 			byte[] chat = readByte();
-			pc.setShopChat(chat);
-			pc.setPrivateShop(true);
-			pc.sendPackets(new S_DoActionShop(pc.getId(), ActionCodes.ACTION_Shop, chat));
-			pc.broadcastPacket(new S_DoActionShop(pc.getId(), ActionCodes.ACTION_Shop, chat));
+                        pc.setShopChat(chat);
+                        pc.setPrivateShop(true);
+                        pc.setOfflineShop(false);
+                        OfflineShopTable.getInstance().removeOfflineShop(pc.getId());
+                        pc.sendPackets(new S_DoActionShop(pc.getId(), ActionCodes.ACTION_Shop, chat));
+                        pc.broadcastPacket(new S_DoActionShop(pc.getId(), ActionCodes.ACTION_Shop, chat));
 		} else if (type == 1) {
 			stopShop(pc, sellList, buyList);
 		}
 	}
 
 	private void stopShop(L1PcInstance pc, List<L1PrivateShopSellList> sellList, List<L1PrivateShopBuyList> buyList) {
-		sellList.clear();
-		buyList.clear();
-		pc.setPrivateShop(false);
-		pc.sendPackets(new S_DoActionGFX(pc.getId(), ActionCodes.ACTION_Idle));
-		pc.broadcastPacket(new S_DoActionGFX(pc.getId(), ActionCodes.ACTION_Idle));
-	}
+                sellList.clear();
+                buyList.clear();
+                pc.setPrivateShop(false);
+                pc.setOfflineShop(false);
+                OfflineShopTable.getInstance().removeOfflineShop(pc.getId());
+                pc.sendPackets(new S_DoActionGFX(pc.getId(), ActionCodes.ACTION_Idle));
+                pc.broadcastPacket(new S_DoActionGFX(pc.getId(), ActionCodes.ACTION_Idle));
+        }
 
 	@Override
 	public String getType() {

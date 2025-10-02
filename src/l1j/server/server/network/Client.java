@@ -44,6 +44,7 @@ import l1j.server.server.GeneralThreadPool;
 import l1j.server.server.PacketOutput;
 import l1j.server.server.controllers.LoginController;
 import l1j.server.server.datatables.CharBuffTable;
+import l1j.server.server.datatables.OfflineShopTable;
 import l1j.server.server.encryptions.L1JEncryption;
 import l1j.server.server.encryptions.L1JKeys;
 import l1j.server.server.encryptions.Opcodes;
@@ -92,7 +93,7 @@ public class Client implements Runnable, PacketOutput {
 
 	private long longest;
 
-	private class LogoutDelay implements Runnable {
+        private class LogoutDelay implements Runnable {
 		private Client client;
 
 		LogoutDelay(Client client) {
@@ -103,14 +104,16 @@ public class Client implements Runnable, PacketOutput {
 		public void run() {
 			try {
 				// TODO Auto-generated method stub
-				quitGame(_activeChar, client.getLastActiveCharName());
+                                quitGame(_activeChar, client.getLastActiveCharName());
 
-				if (_activeChar != null) {
-					synchronized (_activeChar) {
-						_activeChar.logout();
-						setActiveChar(null);
-					}
-				}
+                                if (_activeChar != null) {
+                                        synchronized (_activeChar) {
+                                                if (!_activeChar.isOfflineShop()) {
+                                                        _activeChar.logout();
+                                                }
+                                                setActiveChar(null);
+                                        }
+                                }
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				_log.error("", e);
@@ -141,7 +144,7 @@ public class Client implements Runnable, PacketOutput {
 				L1World.getInstance().getWarList().size(), L1World.getInstance().getAllClans().size()));
 	}
 
-	public static void quitGame(L1PcInstance pc, String lastActiveChar) {
+        public static void quitGame(L1PcInstance pc, String lastActiveChar) {
 		// First cancel trade & save inventory to help avoid duping
 		try {
 			if (pc.getTradeID() != 0) {
@@ -211,12 +214,12 @@ public class Client implements Runnable, PacketOutput {
 			follower.deleteMe();
 		}
 
-		try {
-			pc.saveInventory();
-		} catch (Exception e) {
-			_log.error("Last active char for SEVERE exception below: " + lastActiveChar);
-			_log.error(e.getLocalizedMessage(), e);
-		}
+                try {
+                        pc.saveInventory();
+                } catch (Exception e) {
+                        _log.error("Last active char for SEVERE exception below: " + lastActiveChar);
+                        _log.error(e.getLocalizedMessage(), e);
+                }
 
 		L1DeathMatch.getInstance().checkLeaveGame(pc);
 		L1PolyRace.getInstance().checkLeaveGame(pc);
@@ -231,13 +234,20 @@ public class Client implements Runnable, PacketOutput {
 
 		LogIP li = new LogIP();
 		li.storeLogout(pc);
-		try {
-			pc.save();
-		} catch (Exception e) {
-			_log.error("Last active char for SEVERE exception below: " + lastActiveChar);
-			_log.error(e.getLocalizedMessage(), e);
-		}
-	}
+                try {
+                        pc.save();
+                } catch (Exception e) {
+                        _log.error("Last active char for SEVERE exception below: " + lastActiveChar);
+                        _log.error(e.getLocalizedMessage(), e);
+                }
+
+                if (pc.isPrivateShop()) {
+                        pc.setOfflineShop(true);
+                        pc.setNetConnection(null);
+                        pc.setPacketOutput(null);
+                        OfflineShopTable.getInstance().storeOfflineShop(pc);
+                }
+        }
 
 	public void CharReStart(boolean flag) {
 		_charRestart = flag;

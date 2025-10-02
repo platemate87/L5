@@ -103,12 +103,14 @@ public class GameServer extends Thread {
 	 */
 	public void disconnectAllCharacters() {
 		Collection<L1PcInstance> players = L1World.getInstance().getAllPlayers();
-		for (L1PcInstance pc : players) {
-			pc.getNetConnection().setActiveChar(null);
-			pc.getNetConnection().kick();
-		}
-		// Kick save after all, make
-		for (L1PcInstance pc : players) {
+                for (L1PcInstance pc : players) {
+                        if (pc.getNetConnection() != null) {
+                                pc.getNetConnection().setActiveChar(null);
+                                pc.getNetConnection().kick();
+                        }
+                }
+                // Kick save after all, make
+                for (L1PcInstance pc : players) {
 			Client.quitGame(pc, "--SENT FROM DISCONNECTALL--");
 			L1World.getInstance().removeObject(pc);
 		}
