@@ -574,6 +574,8 @@ public class L1PcInstance extends L1Character {
         private short _baseMaxHp = 0;
 
         private short _baseMaxMp = 0;
+        private boolean _forceHpHistoryRebuild;
+        private boolean _forceMpHistoryRebuild;
 
         private static class HpGainEntry {
                 private short randomComponent;
@@ -1087,6 +1089,9 @@ public class L1PcInstance extends L1Character {
                 if (_suspendHpMpRecalculation) {
                         return;
                 }
+                if (diff > 0) {
+                        _forceHpHistoryRebuild = true;
+                }
                 recalcBaseHpMpFromStats();
                 setCurrentHp(getMaxHp());
                 setCurrentMp(getMaxMp());
@@ -1162,6 +1167,9 @@ public class L1PcInstance extends L1Character {
                 _baseWis = (byte) newBase;
                 if (_suspendHpMpRecalculation) {
                         return;
+                }
+                if (diff > 0) {
+                        _forceMpHistoryRebuild = true;
                 }
                 recalcBaseHpMpFromStats();
                 setCurrentHp(getMaxHp());
@@ -1392,6 +1400,27 @@ public class L1PcInstance extends L1Character {
                 int expectedPostTenLevels = Math.max(0, getLevel() - 9);
                 boolean historyUpdated = false;
 
+                boolean rebuildHp = _forceHpHistoryRebuild;
+                boolean rebuildMp = _forceMpHistoryRebuild;
+                _forceHpHistoryRebuild = false;
+                _forceMpHistoryRebuild = false;
+
+                if (rebuildHp && expectedPostTenLevels > 0) {
+                        if (rebuildHpHistoryWithExpectedValues(features, expectedPostTenLevels, startingHp,
+                                        Math.max(0, untrackedHpContribution))) {
+                                historyUpdated = true;
+                                oldHpHistoryTotal = sumHpHistoryTotals();
+                        }
+                }
+
+                if (rebuildMp && expectedPostTenLevels > 0) {
+                        if (rebuildMpHistoryWithExpectedValues(features, expectedPostTenLevels, startingMp,
+                                        Math.max(0, untrackedMpContribution))) {
+                                historyUpdated = true;
+                                oldMpHistoryTotal = sumMpHistoryTotals();
+                        }
+                }
+
                 List<Integer> missingHpIndexes = ensureHpHistoryCapacityAndCollectMissing(expectedPostTenLevels);
                 if (!missingHpIndexes.isEmpty()) {
                         int missingHpContribution = estimateContributionForMissingHp(features, missingHpIndexes,
@@ -1472,6 +1501,241 @@ public class L1PcInstance extends L1Character {
                         } catch (Exception e) {
                                 _log.error("Failed to store updated HP/MP gain history for {}", getName(), e);
                         }
+                }
+        }
+
+        private static final class ExpectedGain {
+                final int total;
+                final short randomComponent;
+
+                ExpectedGain(int total, int randomComponent) {
+                        this.total = total;
+                        this.randomComponent = clampToShort(randomComponent);
+                }
+        }
+
+        private boolean rebuildHpHistoryWithExpectedValues(L1ClassFeature features, int expectedEntries, int startingHp,
+                        int earlyContribution) {
+                boolean updated = false;
+                if (expectedEntries <= 0) {
+                        if (!_hpGainHistory.isEmpty()) {
+                                _hpGainHistory.clear();
+                                return true;
+                        }
+                        return false;
+                }
+
+                while (_hpGainHistory.size() < expectedEntries) {
+                        _hpGainHistory.add(null);
+                        updated = true;
+                }
+                for (int i = _hpGainHistory.size() - 1; i >= expectedEntries; i--) {
+                        _hpGainHistory.remove(i);
+                        updated = true;
+                }
+
+                int runningHp = startingHp + earlyContribution;
+                for (int historyIndex = 0; historyIndex < expectedEntries; historyIndex++) {
+                        ExpectedGain expected = calculateExpectedHpGain(features, runningHp);
+                        int clampedGain = expected.total;
+                        HpGainEntry entry = _hpGainHistory.get(historyIndex);
+                        if (entry == null) {
+                                entry = new HpGainEntry(expected.randomComponent, getBaseCon(), getOriginalCon());
+                                _hpGainHistory.set(historyIndex, entry);
+                                updated = true;
+                        } else {
+                                if (entry.getRandomComponent() != expected.randomComponent || entry.getBaseCon() != getBaseCon()
+                                                || entry.getOriginalCon() != getOriginalCon()) {
+                                        entry.setRandomComponent(expected.randomComponent);
+                                        entry.setBaseCon(getBaseCon());
+                                        entry.setOriginalCon(getOriginalCon());
+                                        updated = true;
+                                }
+                        }
+                        runningHp = Math.min(getClassMaxHp(), runningHp + clampedGain);
+                }
+                return updated;
+        }
+
+        private boolean rebuildMpHistoryWithExpectedValues(L1ClassFeature features, int expectedEntries, int startingMp,
+                        int earlyContribution) {
+                boolean updated = false;
+                if (expectedEntries <= 0) {
+                        if (!_mpGainHistory.isEmpty()) {
+                                _mpGainHistory.clear();
+                                return true;
+                        }
+                        return false;
+                }
+
+                while (_mpGainHistory.size() < expectedEntries) {
+                        _mpGainHistory.add(null);
+                        updated = true;
+                }
+                for (int i = _mpGainHistory.size() - 1; i >= expectedEntries; i--) {
+                        _mpGainHistory.remove(i);
+                        updated = true;
+                }
+
+                int runningMp = startingMp + earlyContribution;
+                for (int historyIndex = 0; historyIndex < expectedEntries; historyIndex++) {
+                        ExpectedGain expected = calculateExpectedMpGain(features, runningMp);
+                        int clampedGain = expected.total;
+                        MpGainEntry entry = _mpGainHistory.get(historyIndex);
+                        if (entry == null) {
+                                entry = new MpGainEntry(expected.randomComponent, getBaseWis(), getOriginalWis());
+                                _mpGainHistory.set(historyIndex, entry);
+                                updated = true;
+                        } else {
+                                if (entry.getRandomComponent() != expected.randomComponent || entry.getBaseWis() != getBaseWis()
+                                                || entry.getOriginalWis() != getOriginalWis()) {
+                                        entry.setRandomComponent(expected.randomComponent);
+                                        entry.setBaseWis(getBaseWis());
+                                        entry.setOriginalWis(getOriginalWis());
+                                        updated = true;
+                                }
+                        }
+                        runningMp = Math.min(getClassMaxMp(), runningMp + clampedGain);
+                }
+                return updated;
+        }
+
+        private static short clampToShort(int value) {
+                if (value < Short.MIN_VALUE) {
+                        return Short.MIN_VALUE;
+                }
+                if (value > Short.MAX_VALUE) {
+                        return Short.MAX_VALUE;
+                }
+                return (short) value;
+        }
+
+        private static int roundExpected(double value) {
+                return (int) Math.round(value);
+        }
+
+        private ExpectedGain calculateExpectedHpGain(L1ClassFeature features, int runningHp) {
+                int maxHp = getClassMaxHp();
+                int statBonus = calcConBonus(getBaseCon());
+                int originalBonus = features.getOriginalHpBonus(getOriginalCon());
+                int expectedRandom = roundExpected(getExpectedHpRoll());
+                long totalGain = (long) expectedRandom + statBonus + originalBonus;
+                if (totalGain < 0) {
+                        totalGain = 0;
+                }
+                runningHp = Math.min(maxHp, runningHp);
+                if (runningHp + totalGain > maxHp) {
+                        totalGain = maxHp - runningHp;
+                }
+                if (totalGain < 0) {
+                        totalGain = 0;
+                }
+                int randomComponent = (int) totalGain - statBonus - originalBonus;
+                if (randomComponent < 0) {
+                        randomComponent = 0;
+                }
+                return new ExpectedGain((int) totalGain, randomComponent);
+        }
+
+        private ExpectedGain calculateExpectedMpGain(L1ClassFeature features, int runningMp) {
+                int maxMp = getClassMaxMp();
+                int statBonus = calcWisSeedBonus(getBaseWis());
+                int originalBonus = features.getOriginalMpBonus(getOriginalWis());
+                int expectedRandom = roundExpected(getExpectedMpRoll());
+                long totalGain = (long) expectedRandom + statBonus + originalBonus;
+                if (totalGain < 0) {
+                        totalGain = 0;
+                }
+                runningMp = Math.min(maxMp, runningMp);
+                if (runningMp + totalGain > maxMp) {
+                        totalGain = maxMp - runningMp;
+                }
+                if (totalGain < 0) {
+                        totalGain = 0;
+                }
+                int randomComponent = (int) totalGain - statBonus - originalBonus;
+                if (randomComponent < 0) {
+                        randomComponent = 0;
+                }
+                return new ExpectedGain((int) totalGain, randomComponent);
+        }
+
+        private double getExpectedHpRoll() {
+                switch (getType()) {
+                case 0:
+                        return 11.5;
+                case 1:
+                        return 17.5;
+                case 2:
+                        return 10.5;
+                case 3:
+                        return 7.5;
+                case 4:
+                        return 10.5;
+                case 5:
+                        return 13.5;
+                case 6:
+                        return 9.5;
+                default:
+                        return 0;
+                }
+        }
+
+        private double getExpectedMpRoll() {
+                int wis = getBaseWis();
+                int seedY;
+                if (wis < 9 || wis > 9 && wis < 12) {
+                        seedY = 2;
+                } else if (wis == 9 || wis >= 12 && wis <= 17) {
+                        seedY = 3;
+                } else if (wis >= 18 && wis <= 23 || wis == 25 || wis == 26 || wis == 29 || wis == 30 || wis == 33
+                                || wis == 34) {
+                        seedY = 4;
+                } else if (wis == 24 || wis == 27 || wis == 28 || wis == 31 || wis == 32 || wis >= 35) {
+                        seedY = 5;
+                } else {
+                        seedY = 2;
+                }
+
+                int seedZ;
+                if (wis >= 7 && wis <= 9) {
+                        seedZ = 0;
+                } else if (wis >= 10 && wis <= 14) {
+                        seedZ = 1;
+                } else if (wis >= 15 && wis <= 20) {
+                        seedZ = 2;
+                } else if (wis >= 21 && wis <= 24) {
+                        seedZ = 3;
+                } else if (wis >= 25 && wis <= 28) {
+                        seedZ = 4;
+                } else if (wis >= 29 && wis <= 32) {
+                        seedZ = 5;
+                } else if (wis >= 33) {
+                        seedZ = 6;
+                } else {
+                        seedZ = 0;
+                }
+
+                double expectedBase = seedY > 0 ? (seedY + 1) / 2.0 : 0;
+                expectedBase += seedZ;
+
+                switch (getType()) {
+                case 0:
+                        return expectedBase;
+                case 1:
+                        return expectedBase * 2.0 / 3.0;
+                case 2:
+                        return expectedBase * 1.5;
+                case 3:
+                        return expectedBase * 2.0;
+                case 4:
+                        return expectedBase * 1.5;
+                case 5:
+                        return expectedBase * 2.0 / 3.0;
+                case 6:
+                        return expectedBase * 5.0 / 3.0;
+                default:
+                        return expectedBase;
                 }
         }
 
