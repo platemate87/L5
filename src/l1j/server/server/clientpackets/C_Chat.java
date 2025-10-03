@@ -158,8 +158,11 @@ public class C_Chat extends ClientBasePacket {
                 }
 
                 String argsWithWhitespace = chatText.substring(command.length());
-                if (!argsWithWhitespace.isEmpty() && !Character.isWhitespace(argsWithWhitespace.charAt(0))) {
-                        return false;
+                if (!argsWithWhitespace.isEmpty()) {
+                        int codePoint = argsWithWhitespace.codePointAt(0);
+                        if (!Character.isWhitespace(codePoint) && !Character.isSpaceChar(codePoint)) {
+                                return false;
+                        }
                 }
 
                 String args = argsWithWhitespace.trim();
