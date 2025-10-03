@@ -40,6 +40,11 @@ import static l1j.server.server.serverpackets.S_EquipmentWindow.EQUIPMENT_INDEX_
 import static l1j.server.server.serverpackets.S_EquipmentWindow.EQUIPMENT_INDEX_WEAPON;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -743,16 +748,183 @@ public class L1PcInventory extends L1Inventory {
 		return hpr;
 	}
 
-	public int mpRegenPerTick() {
-		int mpr = 0;
-		for (Object itemObject : _items) {
-			L1ItemInstance item = (L1ItemInstance) itemObject;
-			if (item.isEquipped()) {
-				mpr += item.getItem().get_addmpr() + item.getAddMpRegen();
-			}
-		}
-		return mpr;
-	}
+        public int mpRegenPerTick() {
+                int mpr = 0;
+                for (Object itemObject : _items) {
+                        L1ItemInstance item = (L1ItemInstance) itemObject;
+                        if (item.isEquipped()) {
+                                mpr += item.getItem().get_addmpr() + item.getAddMpRegen();
+                        }
+                }
+                return mpr;
+        }
+
+        public int getInventoryChaBonus() {
+                if (_items.isEmpty()) {
+                        return 0;
+                }
+
+                Map<ChaEquipmentSlot, List<Integer>> bonusesBySlot = new EnumMap<>(ChaEquipmentSlot.class);
+                for (L1ItemInstance item : _items) {
+                        if (item.isEquipped() || item.isSealed()) {
+                                continue;
+                        }
+                        L1Item template = item.getItem();
+                        if (template == null || template.get_addcha() <= 0) {
+                                continue;
+                        }
+                        if (!canOwnerEquip(template)) {
+                                continue;
+                        }
+
+                        ChaEquipmentSlot slot = getChaSlot(template);
+                        if (slot == null) {
+                                continue;
+                        }
+
+                        bonusesBySlot.computeIfAbsent(slot, key -> new ArrayList<>()).add((int) template.get_addcha());
+                }
+
+                int bonus = 0;
+                for (Map.Entry<ChaEquipmentSlot, List<Integer>> entry : bonusesBySlot.entrySet()) {
+                        List<Integer> values = entry.getValue();
+                        if (values.isEmpty()) {
+                                continue;
+                        }
+                        Collections.sort(values, Collections.reverseOrder());
+                        int limit = entry.getKey().getCapacity(this);
+                        for (int i = 0; i < values.size() && i < limit; i++) {
+                                bonus += values.get(i);
+                        }
+                }
+                return bonus;
+        }
+
+        private boolean canOwnerEquip(L1Item item) {
+                if (item == null) {
+                        return false;
+                }
+                L1PcInstance owner = getOwner();
+                if (owner == null) {
+                        return false;
+                }
+                if (owner.isGm()) {
+                        return true;
+                }
+
+                if (!isValidClass(owner, item)) {
+                        return false;
+                }
+
+                int min = item.getMinLevel();
+                if (min != 0 && owner.getLevel() < min) {
+                        return false;
+                }
+                int max = item.getMaxLevel();
+                if (max != 0 && owner.getLevel() > max) {
+                        return false;
+                }
+                return true;
+        }
+
+        private boolean isValidClass(L1PcInstance owner, L1Item item) {
+                return owner.isCrown() && item.isUseRoyal() || owner.isKnight() && item.isUseKnight()
+                                || owner.isElf() && item.isUseElf() || owner.isWizard() && item.isUseMage()
+                                || owner.isDarkelf() && item.isUseDarkelf() || owner.isDragonKnight() && item.isUseDragonknight()
+                                || owner.isIllusionist() && item.isUseIllusionist();
+        }
+
+        private ChaEquipmentSlot getChaSlot(L1Item item) {
+                if (item.getType2() == 1) {
+                        return ChaEquipmentSlot.WEAPON;
+                }
+                if (item.getType2() != 2) {
+                        return null;
+                }
+
+                switch (item.getType()) {
+                case 1:
+                        return ChaEquipmentSlot.HELM;
+                case 2:
+                        return ChaEquipmentSlot.SHIRT;
+                case 3:
+                        return ChaEquipmentSlot.ARMOR;
+                case 4:
+                        return ChaEquipmentSlot.CLOAK;
+                case 5:
+                        return ChaEquipmentSlot.GLOVE;
+                case 6:
+                        return ChaEquipmentSlot.BOOTS;
+                case 7:
+                        return ChaEquipmentSlot.SHIELD_GUARDER;
+                case 8:
+                        return ChaEquipmentSlot.AMULET;
+                case 9:
+                        return ChaEquipmentSlot.RING;
+                case 10:
+                        return ChaEquipmentSlot.BELT;
+                case 12:
+                        return ChaEquipmentSlot.EARRING;
+                case 13:
+                        return ChaEquipmentSlot.SHIELD_GUARDER;
+                case 14:
+                        return ChaEquipmentSlot.RUNE1;
+                case 15:
+                        return ChaEquipmentSlot.RUNE2;
+                case 16:
+                        return ChaEquipmentSlot.RUNE3;
+                case 17:
+                        return ChaEquipmentSlot.RUNE4;
+                case 18:
+                        return ChaEquipmentSlot.RUNE5;
+                default:
+                        return null;
+                }
+        }
+
+        private int getAvailableRingSlots() {
+                int slots = 2;
+                int braceletCount = getTypeEquipped(2, 11);
+                if (braceletCount >= 4) {
+                        slots = 4;
+                } else if (braceletCount >= 3) {
+                        slots = 3;
+                }
+                return slots;
+        }
+
+        private enum ChaEquipmentSlot {
+                WEAPON(1),
+                HELM(1),
+                SHIRT(1),
+                ARMOR(1),
+                CLOAK(1),
+                GLOVE(1),
+                BOOTS(1),
+                SHIELD_GUARDER(1),
+                AMULET(1),
+                RING(2),
+                BELT(1),
+                EARRING(1),
+                RUNE1(1),
+                RUNE2(1),
+                RUNE3(1),
+                RUNE4(1),
+                RUNE5(1);
+
+                private final int _defaultCapacity;
+
+                ChaEquipmentSlot(int defaultCapacity) {
+                        _defaultCapacity = defaultCapacity;
+                }
+
+                int getCapacity(L1PcInventory inventory) {
+                        if (this == RING) {
+                                return inventory.getAvailableRingSlots();
+                        }
+                        return _defaultCapacity;
+                }
+        }
 
 	public L1ItemInstance CaoPenalty() {
 		new Random();

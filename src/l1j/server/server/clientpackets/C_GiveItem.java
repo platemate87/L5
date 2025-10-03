@@ -234,7 +234,7 @@ public class C_GiveItem extends ClientBasePacket {
 		for (Object pet : petlist) {
 			petcost += ((L1NpcInstance) pet).getPetcost();
 		}
-		int charisma = pc.getCha();
+		int charisma = pc.getChaForPetControl();
 		if (pc.isCrown()) {
 			charisma += 6;
 		} else if (pc.isElf()) {

@@ -2572,12 +2572,12 @@ public class L1SkillUse {
 								for (Object pet : petlist) {
 									petcost += ((L1NpcInstance) pet).getPetcost();
 								}
-								int pcCha = pc.getCha();
+								int pcCha = pc.getChaForPetControl();
 								if (pcCha > 34) { // max count = 5
 									pcCha = 34;
 								}
 								int charisma = pcCha + 6 - petcost;
-								// int charisma = pc.getCha() + 6 - petcost;
+								// int charisma = pc.getChaForPetControl() + 6 - petcost;
 								int summoncount = charisma / summoncost;
 								L1Npc npcTemp = NpcTable.getInstance().getTemplate(summonid);
 								for (int i = 0; i < summoncount; i++) {
@@ -2622,7 +2622,7 @@ public class L1SkillUse {
 
 									L1Npc npcTemp = NpcTable.getInstance().getTemplate(summonid);
 									L1SummonInstance summon = new L1SummonInstance(npcTemp, pc);
-									summon.setPetcost(pc.getCha() + 7);
+									summon.setPetcost(pc.getChaForPetControl() + 7);
 								}
 							} else {
 								pc.sendPackets(new S_ServerMessage(79)); // Nothing happened.
@@ -2918,7 +2918,7 @@ public class L1SkillUse {
 						for (Object pet : petlist) {
 							petcost += ((L1NpcInstance) pet).getPetcost();
 						}
-						int charisma = _user.getCha();
+						int charisma = _player.getChaForPetControl();
 						if (_player.isElf()) {
 							if (charisma > 30) { // max count = 7
 								charisma = 30;
@@ -2943,7 +2943,7 @@ public class L1SkillUse {
 						for (Object pet : petlist) {
 							petcost += ((L1NpcInstance) pet).getPetcost();
 						}
-						int charisma = _user.getCha();
+						int charisma = _player.getChaForPetControl();
 						if (_player.isElf()) {
 							if (charisma > 30) { // max count = 7
 								charisma = 30;
