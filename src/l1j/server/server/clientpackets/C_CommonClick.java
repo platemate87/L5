@@ -128,13 +128,13 @@ public class C_CommonClick {
 				} else {
 					lvl = 1;
 				}
-				int ac = rs.getByte("Ac");
-				int str = rs.getByte("Str");
-				int dex = rs.getByte("Dex");
-				int con = rs.getByte("Con");
-				int wis = rs.getByte("Wis");
-				int cha = rs.getByte("Cha");
-				int intel = rs.getByte("Intel");
+				int ac = clampToPacketRange(rs.getInt("Ac"));
+				int str = clampToPacketRange(rs.getInt("Str"));
+				int dex = clampToPacketRange(rs.getInt("Dex"));
+				int con = clampToPacketRange(rs.getInt("Con"));
+				int wis = clampToPacketRange(rs.getInt("Wis"));
+				int cha = clampToPacketRange(rs.getInt("Cha"));
+				int intel = clampToPacketRange(rs.getInt("Intel"));
 				int accessLevel = rs.getShort("AccessLevel");
 				Timestamp _birthday = rs.getTimestamp("birthday");
 				SimpleDateFormat SimpleDate = new SimpleDateFormat("yyyyMMdd");
@@ -155,5 +155,15 @@ public class C_CommonClick {
 
 	public String getType() {
 		return C_COMMON_CLICK;
+	}
+
+	private int clampToPacketRange(int value) {
+		if (value < 0) {
+			return 0;
+		}
+		if (value > 255) {
+			return 255;
+		}
+		return value;
 	}
 }

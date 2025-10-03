@@ -72,12 +72,12 @@ public class MySqlCharacterStorage implements CharacterStorage {
 			pc.setStatus(0);
 			pc.addBaseMaxMp(rs.getShort("MaxMp"));
 			pc.setCurrentMpDirect(rs.getShort("CurMp"));
-			pc.addBaseStr(rs.getByte("Str"));
-			pc.addBaseCon(rs.getByte("Con"));
-			pc.addBaseDex(rs.getByte("Dex"));
-			pc.addBaseCha(rs.getByte("Cha"));
-			pc.addBaseInt(rs.getByte("Intel"));
-			pc.addBaseWis(rs.getByte("Wis"));
+			pc.addBaseStr(clampStatToByte(rs.getInt("Str")));
+			pc.addBaseCon(clampStatToByte(rs.getInt("Con")));
+			pc.addBaseDex(clampStatToByte(rs.getInt("Dex")));
+			pc.addBaseCha(clampStatToByte(rs.getInt("Cha")));
+			pc.addBaseInt(clampStatToByte(rs.getInt("Intel")));
+			pc.addBaseWis(clampStatToByte(rs.getInt("Wis")));
 			int status = rs.getInt("Status");
 			pc.setCurrentWeapon(status);
 			int classId = rs.getInt("Class");
@@ -442,5 +442,14 @@ public class MySqlCharacterStorage implements CharacterStorage {
                         SQLUtil.close(rs);
                 }
                 return false;
+        }
+
+        private byte clampStatToByte(int value) {
+                if (value < 1) {
+                        value = 1;
+                } else if (value > 127) {
+                        value = 127;
+                }
+                return (byte) value;
         }
 }
