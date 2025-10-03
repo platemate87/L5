@@ -1390,27 +1390,38 @@ public class L1PcInstance extends L1Character {
                 int oldHpHistoryTotal = sumHpHistoryTotals();
                 int oldMpHistoryTotal = sumMpHistoryTotals();
 
+                int untrackedHpContribution = Math.max(0, oldBaseHp - startingHp - oldHpHistoryTotal);
+                int untrackedMpContribution = Math.max(0, oldBaseMp - startingMp - oldMpHistoryTotal);
+
                 int expectedPostTenLevels = Math.max(0, getLevel() - 9);
                 boolean historyUpdated = false;
 
                 List<Integer> missingHpIndexes = ensureHpHistoryCapacityAndCollectMissing(expectedPostTenLevels);
                 if (!missingHpIndexes.isEmpty()) {
-                        int missingHpContribution = Math.max(0, oldBaseHp - startingHp - oldHpHistoryTotal);
-                        populateMissingHpHistoryEntries(features, missingHpIndexes, missingHpContribution);
-                        historyUpdated = true;
-                        oldHpHistoryTotal = sumHpHistoryTotals();
+                        int missingHpContribution = estimateContributionForMissingHp(features, missingHpIndexes,
+                                        untrackedHpContribution);
+                        if (missingHpContribution > 0) {
+                                populateMissingHpHistoryEntries(features, missingHpIndexes, missingHpContribution);
+                                historyUpdated = true;
+                                oldHpHistoryTotal = sumHpHistoryTotals();
+                                untrackedHpContribution = Math.max(0, untrackedHpContribution - missingHpContribution);
+                        }
                 }
 
                 List<Integer> missingMpIndexes = ensureMpHistoryCapacityAndCollectMissing(expectedPostTenLevels);
                 if (!missingMpIndexes.isEmpty()) {
-                        int missingMpContribution = Math.max(0, oldBaseMp - startingMp - oldMpHistoryTotal);
-                        populateMissingMpHistoryEntries(features, missingMpIndexes, missingMpContribution);
-                        historyUpdated = true;
-                        oldMpHistoryTotal = sumMpHistoryTotals();
+                        int missingMpContribution = estimateContributionForMissingMp(features, missingMpIndexes,
+                                        untrackedMpContribution);
+                        if (missingMpContribution > 0) {
+                                populateMissingMpHistoryEntries(features, missingMpIndexes, missingMpContribution);
+                                historyUpdated = true;
+                                oldMpHistoryTotal = sumMpHistoryTotals();
+                                untrackedMpContribution = Math.max(0, untrackedMpContribution - missingMpContribution);
+                        }
                 }
 
-                int earlyHpContribution = Math.max(0, oldBaseHp - oldHpHistoryTotal - startingHp);
-                int earlyMpContribution = Math.max(0, oldBaseMp - oldMpHistoryTotal - startingMp);
+                int earlyHpContribution = Math.max(0, untrackedHpContribution);
+                int earlyMpContribution = Math.max(0, untrackedMpContribution);
 
                 int newBaseHp = startingHp + earlyHpContribution;
                 int newBaseMp = startingMp + earlyMpContribution;
@@ -1507,6 +1518,82 @@ public class L1PcInstance extends L1Character {
                         }
                 }
                 return missing;
+        }
+
+        private int estimateContributionForMissingHp(L1ClassFeature features, List<Integer> missingIndexes,
+                        int availableContribution) {
+                if (availableContribution <= 0 || missingIndexes.isEmpty()) {
+                        return 0;
+                }
+                long statAndOriginalTotal = 0;
+                for (int historyIndex : missingIndexes) {
+                        HpGainEntry neighbor = findNearestHpGainEntry(historyIndex);
+                        int baseCon = neighbor != null ? neighbor.getBaseCon() : getBaseCon();
+                        int originalCon = neighbor != null ? neighbor.getOriginalCon() : getOriginalCon();
+                        int statBonus = calcConBonus(baseCon);
+                        int originalBonus = features.getOriginalHpBonus(originalCon);
+                        statAndOriginalTotal += Math.max(0, statBonus + originalBonus);
+                }
+                long recordedRandomSum = 0;
+                int recordedEntries = 0;
+                for (HpGainEntry entry : _hpGainHistory) {
+                        if (entry == null) {
+                                continue;
+                        }
+                        recordedRandomSum += Math.max(0, entry.getRandomComponent());
+                        recordedEntries++;
+                }
+                long averageRandom = recordedEntries > 0 ? recordedRandomSum / recordedEntries : 0;
+                long estimatedRandomTotal = Math.max(0, averageRandom * (long) missingIndexes.size());
+                long estimate = statAndOriginalTotal + estimatedRandomTotal;
+                if (estimate <= 0) {
+                        int earlyLevels = Math.min(9, Math.max(0, getLevel() - 1));
+                        estimate = (long) availableContribution * missingIndexes.size()
+                                        / Math.max(1, missingIndexes.size() + earlyLevels);
+                }
+                if (estimate <= 0) {
+                        return 0;
+                }
+                long boundedEstimate = Math.min(estimate, Integer.MAX_VALUE);
+                return (int) Math.min(boundedEstimate, availableContribution);
+        }
+
+        private int estimateContributionForMissingMp(L1ClassFeature features, List<Integer> missingIndexes,
+                        int availableContribution) {
+                if (availableContribution <= 0 || missingIndexes.isEmpty()) {
+                        return 0;
+                }
+                long statAndOriginalTotal = 0;
+                for (int historyIndex : missingIndexes) {
+                        MpGainEntry neighbor = findNearestMpGainEntry(historyIndex);
+                        int baseWis = neighbor != null ? neighbor.getBaseWis() : getBaseWis();
+                        int originalWis = neighbor != null ? neighbor.getOriginalWis() : getOriginalWis();
+                        int statBonus = calcWisSeedBonus(baseWis);
+                        int originalBonus = features.getOriginalMpBonus(originalWis);
+                        statAndOriginalTotal += Math.max(0, statBonus + originalBonus);
+                }
+                long recordedRandomSum = 0;
+                int recordedEntries = 0;
+                for (MpGainEntry entry : _mpGainHistory) {
+                        if (entry == null) {
+                                continue;
+                        }
+                        recordedRandomSum += Math.max(0, entry.getRandomComponent());
+                        recordedEntries++;
+                }
+                long averageRandom = recordedEntries > 0 ? recordedRandomSum / recordedEntries : 0;
+                long estimatedRandomTotal = Math.max(0, averageRandom * (long) missingIndexes.size());
+                long estimate = statAndOriginalTotal + estimatedRandomTotal;
+                if (estimate <= 0) {
+                        int earlyLevels = Math.min(9, Math.max(0, getLevel() - 1));
+                        estimate = (long) availableContribution * missingIndexes.size()
+                                        / Math.max(1, missingIndexes.size() + earlyLevels);
+                }
+                if (estimate <= 0) {
+                        return 0;
+                }
+                long boundedEstimate = Math.min(estimate, Integer.MAX_VALUE);
+                return (int) Math.min(boundedEstimate, availableContribution);
         }
 
         private void populateMissingHpHistoryEntries(L1ClassFeature features, List<Integer> missingIndexes, int totalContribution) {
