@@ -1087,8 +1087,6 @@ public class L1PcInstance extends L1Character {
                 if (_suspendHpMpRecalculation) {
                         return;
                 }
-                setOriginalCon(_baseCon);
-                updateOriginalConDerived();
                 recalcBaseHpMpFromStats();
                 setCurrentHp(getMaxHp());
                 setCurrentMp(getMaxMp());
@@ -1165,8 +1163,6 @@ public class L1PcInstance extends L1Character {
                 if (_suspendHpMpRecalculation) {
                         return;
                 }
-                setOriginalWis(_baseWis);
-                updateOriginalWisDerived();
                 recalcBaseHpMpFromStats();
                 setCurrentHp(getMaxHp());
                 setCurrentMp(getMaxMp());
@@ -3955,6 +3951,7 @@ public class L1PcInstance extends L1Character {
 
 	public void setOriginalCon(int i) {
 		_originalCon = i;
+		updateOriginalConDerived();
 	}
 
 	public void setOriginalDex(int i) {
@@ -3971,6 +3968,7 @@ public class L1PcInstance extends L1Character {
 
 	public void setOriginalWis(int i) {
 		_originalWis = i;
+		updateOriginalWisDerived();
 	}
 
 	public void setPacketOutput(PacketOutput out) {
