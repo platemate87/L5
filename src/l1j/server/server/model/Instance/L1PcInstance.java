@@ -1422,11 +1422,6 @@ public class L1PcInstance extends L1Character {
                 int newBaseHp = startingHp + earlyHpContribution;
                 int newBaseMp = startingMp + earlyMpContribution;
 
-                int newHpStatBonus = calcConBonus(getBaseCon());
-                int newHpOriginalBonus = features.getOriginalHpBonus(getOriginalCon());
-                int newMpStatBonus = calcWisSeedBonus(getBaseWis());
-                int newMpOriginalBonus = features.getOriginalMpBonus(getOriginalWis());
-
                 int maxHp = getClassMaxHp();
                 int maxMp = getClassMaxMp();
 
@@ -1435,7 +1430,8 @@ public class L1PcInstance extends L1Character {
                         if (entry == null) {
                                 continue;
                         }
-                        int gain = entry.getRandomComponent() + newHpStatBonus + newHpOriginalBonus;
+                        int gain = entry.getRandomComponent() + calcConBonus(entry.getBaseCon())
+                                        + features.getOriginalHpBonus(entry.getOriginalCon());
                         if (gain < 0) {
                                 gain = 0;
                         }
@@ -1446,8 +1442,6 @@ public class L1PcInstance extends L1Character {
                                 gain = 0;
                         }
                         newBaseHp += gain;
-                        entry.setBaseCon(getBaseCon());
-                        entry.setOriginalCon(getOriginalCon());
                 }
 
                 for (int i = 0; i < _mpGainHistory.size(); i++) {
@@ -1455,7 +1449,8 @@ public class L1PcInstance extends L1Character {
                         if (entry == null) {
                                 continue;
                         }
-                        int gain = entry.getRandomComponent() + newMpStatBonus + newMpOriginalBonus;
+                        int gain = entry.getRandomComponent() + calcWisSeedBonus(entry.getBaseWis())
+                                        + features.getOriginalMpBonus(entry.getOriginalWis());
                         if (gain < 0) {
                                 gain = 0;
                         }
@@ -1466,8 +1461,6 @@ public class L1PcInstance extends L1Character {
                                 gain = 0;
                         }
                         newBaseMp += gain;
-                        entry.setBaseWis(getBaseWis());
-                        entry.setOriginalWis(getOriginalWis());
                 }
 
                 addBaseMaxHp((short) (newBaseHp - oldBaseHp));
