@@ -2673,6 +2673,15 @@ public class L1PcInstance extends L1Character {
 		return _inventory;
 	}
 
+	public int getChaForPetControl() {
+		int cha = getCha();
+		L1PcInventory inventory = getInventory();
+		if (inventory != null) {
+			cha += inventory.getInventoryChaBonus();
+		}
+		return cha;
+	}
+
 	@Override
 	public int getKarma() {
 		return _karma.get();

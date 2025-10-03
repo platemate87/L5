@@ -3735,8 +3735,7 @@ public class C_NpcAction extends ClientBasePacket {
 		for (Object pet : petlist) {
 			petcost += ((L1NpcInstance) pet).getPetcost();
 		}
-
-		int pcCha = pc.getCha();
+		int pcCha = pc.getChaForPetControl();
 		int charisma = 0;
 		int summoncount = 0;
 		if (levelrange <= 56 // max count = 5

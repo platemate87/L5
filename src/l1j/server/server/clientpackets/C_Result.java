@@ -760,8 +760,7 @@ public class C_Result extends ClientBasePacket {
 				}
 				for (L1NpcInstance petNpc : pc.getPetList().values())
 					petCost += petNpc.getPetcost();
-
-				int charisma = pc.getCha();
+				int charisma = pc.getChaForPetControl();
 				if (pc.isCrown()) {
 					charisma += 6;
 				} else if (pc.isElf()) {
