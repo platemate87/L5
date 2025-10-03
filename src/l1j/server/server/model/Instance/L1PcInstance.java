@@ -1642,7 +1642,7 @@ public class L1PcInstance extends L1Character {
                 int statBonus = calcWisSeedBonus(getBaseWis());
                 int originalBonus = features.getOriginalMpBonus(getOriginalWis());
                 int expectedRandom = roundExpected(getExpectedMpRoll());
-                long totalGain = (long) expectedRandom + statBonus + originalBonus;
+                long totalGain = (long) expectedRandom + originalBonus;
                 if (totalGain < 0) {
                         totalGain = 0;
                 }
@@ -1654,9 +1654,6 @@ public class L1PcInstance extends L1Character {
                         totalGain = 0;
                 }
                 int randomComponent = (int) totalGain - statBonus - originalBonus;
-                if (randomComponent < 0) {
-                        randomComponent = 0;
-                }
                 return new ExpectedGain((int) totalGain, randomComponent);
         }
 
