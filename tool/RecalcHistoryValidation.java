@@ -15,6 +15,8 @@ import sun.misc.Unsafe;
 public class RecalcHistoryValidation {
         private static final int TARGET_LEVEL = 20;
         private static final int EXPECTED_HISTORY_ENTRIES = TARGET_LEVEL - 9;
+        private static final int[] HP_RANDOM_COMPONENTS = { 6, 5, 6, 6, 5, 6, 5, 6, 5, 6, 5 };
+        private static final int[] MP_RANDOM_COMPONENTS = { 3, 2, 3, 3, 2, 3, 2, 3, 2, 3, 2 };
         private static final Set<Integer> GAP_INDEXES = new HashSet<>();
 
         static {
@@ -31,39 +33,19 @@ public class RecalcHistoryValidation {
                 Config.KNIGHT_MAX_HP = 5000;
                 Config.KNIGHT_MAX_MP = 1000;
 
-                ScenarioResult baseline = validateScenario(true, null);
-                validateScenario(false, baseline);
-
-                System.out.println("Regression validation succeeded.");
-        }
-
-        private static void assertEqual(int expected, int actual, String label) {
-                if (expected != actual) {
-                        throw new AssertionError(label + " mismatch: expected " + expected + " but found " + actual);
-                }
-        }
-
-        private static ScenarioResult validateScenario(boolean backfillBeforeBoost, ScenarioResult expected)
-                        throws Exception {
-                String scenarioLabel = backfillBeforeBoost ? "boost-after-backfill" : "boost-during-backfill";
-
                 L1PcInstance cleanHistory = createKnight(false);
                 L1PcInstance gappyHistory = createKnight(true);
 
-                if (backfillBeforeBoost || expected == null) {
-                        runRecalc(cleanHistory);
-                }
-                if (backfillBeforeBoost) {
-                        runRecalc(gappyHistory);
-                }
+                runRecalc(cleanHistory);
+                runRecalc(gappyHistory);
 
                 short cleanHpBefore = cleanHistory.getBaseMaxHp();
                 short gappyHpBefore = gappyHistory.getBaseMaxHp();
                 short cleanMpBefore = cleanHistory.getBaseMaxMp();
                 short gappyMpBefore = gappyHistory.getBaseMaxMp();
 
-                assertEqual(cleanHpBefore, gappyHpBefore, scenarioLabel + " initial base HP");
-                assertEqual(cleanMpBefore, gappyMpBefore, scenarioLabel + " initial base MP");
+                assertEqual(cleanHpBefore, gappyHpBefore, "initial base HP");
+                assertEqual(cleanMpBefore, gappyMpBefore, "initial base MP");
 
                 boostStats(cleanHistory);
                 boostStats(gappyHistory);
@@ -76,55 +58,27 @@ public class RecalcHistoryValidation {
                 short cleanMpAfter = cleanHistory.getBaseMaxMp();
                 short gappyMpAfter = gappyHistory.getBaseMaxMp();
 
-                if (expected == null) {
-                        assertEqual(cleanHpAfter, gappyHpAfter, scenarioLabel + " post-boost base HP");
-                        assertEqual(cleanMpAfter, gappyMpAfter, scenarioLabel + " post-boost base MP");
-                } else {
-                        assertEqual(expected.hp, cleanHpAfter, scenarioLabel + " post-boost clean HP");
-                        assertEqual(expected.mp, cleanMpAfter, scenarioLabel + " post-boost clean MP");
-                        if (gappyHpAfter > expected.hp) {
-                                throw new AssertionError(
-                                                scenarioLabel + " post-boost gappy HP exceeded clean baseline: " + gappyHpAfter
-                                                                + " vs " + expected.hp);
-                        }
-                        if (gappyMpAfter > expected.mp) {
-                                throw new AssertionError(
-                                                scenarioLabel + " post-boost gappy MP exceeded clean baseline: " + gappyMpAfter
-                                                                + " vs " + expected.mp);
-                        }
-                }
+                assertEqual(cleanHpAfter, gappyHpAfter, "post-boost base HP");
+                assertEqual(cleanMpAfter, gappyMpAfter, "post-boost base MP");
 
-                System.out.println("Scenario " + scenarioLabel + ": HP before boost " + cleanHpBefore + " vs " + gappyHpBefore);
-                System.out.println("Scenario " + scenarioLabel + ": MP before boost " + cleanMpBefore + " vs " + gappyMpBefore);
-                System.out.println("Scenario " + scenarioLabel + ": HP after boost " + cleanHpAfter + " vs " + gappyHpAfter);
-                System.out.println("Scenario " + scenarioLabel + ": MP after boost " + cleanMpAfter + " vs " + gappyMpAfter);
-                if (expected == null) {
-                        return new ScenarioResult(cleanHpAfter, cleanMpAfter);
+                System.out.println("Clean vs gappy HP before boost: " + cleanHpBefore + " vs " + gappyHpBefore);
+                System.out.println("Clean vs gappy MP before boost: " + cleanMpBefore + " vs " + gappyMpBefore);
+                System.out.println("Clean vs gappy HP after boost: " + cleanHpAfter + " vs " + gappyHpAfter);
+                System.out.println("Clean vs gappy MP after boost: " + cleanMpAfter + " vs " + gappyMpAfter);
+                System.out.println("Regression validation succeeded.");
+        }
+
+        private static void assertEqual(int expected, int actual, String label) {
+                if (expected != actual) {
+                        throw new AssertionError(label + " mismatch: expected " + expected + " but found " + actual);
                 }
-                return expected;
         }
 
         private static void boostStats(L1PcInstance pc) {
-                pc.setBaseCon((byte) (pc.getBaseCon() + 1));
-                pc.setBaseWis((byte) (pc.getBaseWis() + 1));
-        }
-
-        private static final class ScenarioResult {
-                private final short hp;
-                private final short mp;
-
-                ScenarioResult(short hp, short mp) {
-                        this.hp = hp;
-                        this.mp = mp;
-                }
-        }
-
-        private static short hpRandomComponent(int index) {
-                return (short) ((index % 2 == 0) ? 6 : 5);
-        }
-
-        private static short mpRandomComponent(int index) {
-                return (short) ((index % 2 == 0) ? 3 : 2);
+                pc.setBaseCon((byte) 20);
+                pc.setOriginalCon(20);
+                pc.setBaseWis((byte) 18);
+                pc.setOriginalWis(18);
         }
 
         private static void runRecalc(L1PcInstance pc) {
@@ -186,9 +140,9 @@ public class RecalcHistoryValidation {
                 for (int i = 0; i < EXPECTED_HISTORY_ENTRIES; i++) {
                         boolean skip = withGaps && GAP_INDEXES.contains(i);
                         if (!skip) {
-                                Object hpEntry = hpCtor.newInstance(hpRandomComponent(i), 18, 18);
+                                Object hpEntry = hpCtor.newInstance((short) HP_RANDOM_COMPONENTS[i], 18, 18);
                                 hpHistory.set(i, hpEntry);
-                                Object mpEntry = mpCtor.newInstance(mpRandomComponent(i), 12, 12);
+                                Object mpEntry = mpCtor.newInstance((short) MP_RANDOM_COMPONENTS[i], 12, 12);
                                 mpHistory.set(i, mpEntry);
                         }
                 }

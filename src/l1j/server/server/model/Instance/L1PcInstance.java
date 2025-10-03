@@ -1530,8 +1530,8 @@ public class L1PcInstance extends L1Character {
                         HpGainEntry neighbor = findNearestHpGainEntry(historyIndex);
                         int baseCon = neighbor != null ? neighbor.getBaseCon() : getBaseCon();
                         int originalCon = neighbor != null ? neighbor.getOriginalCon() : getOriginalCon();
-                        int statBonus = calcConBonus(getBaseCon());
-                        int originalBonus = features.getOriginalHpBonus(getOriginalCon());
+                        int statBonus = calcConBonus(baseCon);
+                        int originalBonus = features.getOriginalHpBonus(originalCon);
                         statAndOriginalTotal += Math.max(0, statBonus + originalBonus);
                 }
                 long recordedRandomSum = 0;
@@ -1568,8 +1568,8 @@ public class L1PcInstance extends L1Character {
                         MpGainEntry neighbor = findNearestMpGainEntry(historyIndex);
                         int baseWis = neighbor != null ? neighbor.getBaseWis() : getBaseWis();
                         int originalWis = neighbor != null ? neighbor.getOriginalWis() : getOriginalWis();
-                        int statBonus = calcWisSeedBonus(getBaseWis());
-                        int originalBonus = features.getOriginalMpBonus(getOriginalWis());
+                        int statBonus = calcWisSeedBonus(baseWis);
+                        int originalBonus = features.getOriginalMpBonus(originalWis);
                         statAndOriginalTotal += Math.max(0, statBonus + originalBonus);
                 }
                 long recordedRandomSum = 0;
