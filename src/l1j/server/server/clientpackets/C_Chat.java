@@ -178,7 +178,7 @@ public class C_Chat extends ClientBasePacket {
                         return true;
                 }
 
-                C_CreateParty.inviteToParty(pc, targetPc);
+                C_CreateParty.inviteByName(pc, targetPc);
                 return true;
         }
 

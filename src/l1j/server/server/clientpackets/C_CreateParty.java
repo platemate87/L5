@@ -46,39 +46,10 @@ public class C_CreateParty extends ClientBasePacket {
 
                                 inviteToParty(pc, targetPc);
                         }
-		} else if (type == 2) {
-			String name = readS();
-			L1PcInstance targetPc = L1World.getInstance().getPlayer(name);
-                        if (targetPc == null) {
-                                pc.sendPackets(new S_ServerMessage(109));
-                                return;
-                        }
-
-                        if (pc.getId() == targetPc.getId()) {
-                                return;
-                        }
-
-                        if (!pc.isInChatParty() && !targetPc.isInChatParty()) {
-                                inviteToParty(pc, targetPc);
-                                return;
-                        }
-
-                        if (targetPc.isInChatParty()) {
-                                pc.sendPackets(new S_ServerMessage(415));
-                                return;
-                        }
-
-                        if (pc.isInChatParty()) {
-                                if (pc.getChatParty().isLeader(pc)) {
-                                        targetPc.setPartyID(pc.getId());
-                                        targetPc.sendPackets(new S_Message_YN(951, pc.getName()));
-                                } else {
-                                        pc.sendPackets(new S_ServerMessage(416));
-                                }
-                        } else {
-                                targetPc.setPartyID(pc.getId());
-                                targetPc.sendPackets(new S_Message_YN(951, pc.getName()));
-                        }
+                } else if (type == 2) {
+                        String name = readS();
+                        L1PcInstance targetPc = L1World.getInstance().getPlayer(name);
+                        inviteByName(pc, targetPc);
                 } else if (type == 3) {
 			if ((pc.getParty() == null) || !pc.getParty().isLeader(pc)) {
 				pc.sendPackets(new S_ServerMessage(1697));
@@ -137,5 +108,38 @@ public class C_CreateParty extends ClientBasePacket {
                 targetPc.setPartyID(pc.getId());
                 targetPc.sendPackets(new S_Message_YN(953, pc.getName()));
                 return true;
+        }
+
+        public static void inviteByName(L1PcInstance pc, L1PcInstance targetPc) {
+                if (targetPc == null) {
+                        pc.sendPackets(new S_ServerMessage(109));
+                        return;
+                }
+
+                if (pc.getId() == targetPc.getId()) {
+                        return;
+                }
+
+                if (!pc.isInChatParty() && !targetPc.isInChatParty()) {
+                        inviteToParty(pc, targetPc);
+                        return;
+                }
+
+                if (targetPc.isInChatParty()) {
+                        pc.sendPackets(new S_ServerMessage(415));
+                        return;
+                }
+
+                if (pc.isInChatParty()) {
+                        if (pc.getChatParty().isLeader(pc)) {
+                                targetPc.setPartyID(pc.getId());
+                                targetPc.sendPackets(new S_Message_YN(951, pc.getName()));
+                        } else {
+                                pc.sendPackets(new S_ServerMessage(416));
+                        }
+                } else {
+                        targetPc.setPartyID(pc.getId());
+                        targetPc.sendPackets(new S_Message_YN(951, pc.getName()));
+                }
         }
 }
