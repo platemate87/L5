@@ -1390,6 +1390,25 @@ public class L1PcInstance extends L1Character {
                 int oldHpHistoryTotal = sumHpHistoryTotals();
                 int oldMpHistoryTotal = sumMpHistoryTotals();
 
+                int expectedPostTenLevels = Math.max(0, getLevel() - 9);
+                boolean historyUpdated = false;
+
+                List<Integer> missingHpIndexes = ensureHpHistoryCapacityAndCollectMissing(expectedPostTenLevels);
+                if (!missingHpIndexes.isEmpty()) {
+                        int missingHpContribution = Math.max(0, oldBaseHp - startingHp - oldHpHistoryTotal);
+                        populateMissingHpHistoryEntries(features, missingHpIndexes, missingHpContribution);
+                        historyUpdated = true;
+                        oldHpHistoryTotal = sumHpHistoryTotals();
+                }
+
+                List<Integer> missingMpIndexes = ensureMpHistoryCapacityAndCollectMissing(expectedPostTenLevels);
+                if (!missingMpIndexes.isEmpty()) {
+                        int missingMpContribution = Math.max(0, oldBaseMp - startingMp - oldMpHistoryTotal);
+                        populateMissingMpHistoryEntries(features, missingMpIndexes, missingMpContribution);
+                        historyUpdated = true;
+                        oldMpHistoryTotal = sumMpHistoryTotals();
+                }
+
                 int earlyHpContribution = Math.max(0, oldBaseHp - oldHpHistoryTotal - startingHp);
                 int earlyMpContribution = Math.max(0, oldBaseMp - oldMpHistoryTotal - startingMp);
 
@@ -1446,6 +1465,150 @@ public class L1PcInstance extends L1Character {
 
                 addBaseMaxHp((short) (newBaseHp - oldBaseHp));
                 addBaseMaxMp((short) (newBaseMp - oldBaseMp));
+
+                if (historyUpdated) {
+                        try {
+                                CharacterTable.getInstance().storeCharacter(this);
+                        } catch (Exception e) {
+                                _log.error("Failed to store updated HP/MP gain history for {}", getName(), e);
+                        }
+                }
+        }
+
+        private List<Integer> ensureHpHistoryCapacityAndCollectMissing(int expectedEntries) {
+                List<Integer> missing = new ArrayList<>();
+                if (expectedEntries <= 0) {
+                        return missing;
+                }
+                while (_hpGainHistory.size() < expectedEntries) {
+                        _hpGainHistory.add(null);
+                }
+                for (int i = 0; i < expectedEntries; i++) {
+                        HpGainEntry entry = _hpGainHistory.get(i);
+                        if (entry == null) {
+                                missing.add(i);
+                        }
+                }
+                return missing;
+        }
+
+        private List<Integer> ensureMpHistoryCapacityAndCollectMissing(int expectedEntries) {
+                List<Integer> missing = new ArrayList<>();
+                if (expectedEntries <= 0) {
+                        return missing;
+                }
+                while (_mpGainHistory.size() < expectedEntries) {
+                        _mpGainHistory.add(null);
+                }
+                for (int i = 0; i < expectedEntries; i++) {
+                        MpGainEntry entry = _mpGainHistory.get(i);
+                        if (entry == null) {
+                                missing.add(i);
+                        }
+                }
+                return missing;
+        }
+
+        private void populateMissingHpHistoryEntries(L1ClassFeature features, List<Integer> missingIndexes, int totalContribution) {
+                if (missingIndexes.isEmpty()) {
+                        return;
+                }
+                int missingCount = missingIndexes.size();
+                int baseShare = missingCount == 0 ? 0 : totalContribution / missingCount;
+                int remainder = missingCount == 0 ? 0 : totalContribution % missingCount;
+                for (int i = 0; i < missingCount; i++) {
+                        int share = baseShare;
+                        if (remainder > 0) {
+                                share++;
+                                remainder--;
+                        }
+                        int historyIndex = missingIndexes.get(i);
+                        HpGainEntry neighbor = findNearestHpGainEntry(historyIndex);
+                        int baseCon = neighbor != null ? neighbor.getBaseCon() : getBaseCon();
+                        int originalCon = neighbor != null ? neighbor.getOriginalCon() : getOriginalCon();
+                        int statBonus = calcConBonus(baseCon);
+                        int originalBonus = features.getOriginalHpBonus(originalCon);
+                        int random = share - statBonus - originalBonus;
+                        if (random < Short.MIN_VALUE) {
+                                random = Short.MIN_VALUE;
+                        } else if (random > Short.MAX_VALUE) {
+                                random = Short.MAX_VALUE;
+                        }
+                        HpGainEntry newEntry = new HpGainEntry((short) random, baseCon, originalCon);
+                        _hpGainHistory.set(historyIndex, newEntry);
+                }
+        }
+
+        private void populateMissingMpHistoryEntries(L1ClassFeature features, List<Integer> missingIndexes, int totalContribution) {
+                if (missingIndexes.isEmpty()) {
+                        return;
+                }
+                int missingCount = missingIndexes.size();
+                int baseShare = missingCount == 0 ? 0 : totalContribution / missingCount;
+                int remainder = missingCount == 0 ? 0 : totalContribution % missingCount;
+                for (int i = 0; i < missingCount; i++) {
+                        int share = baseShare;
+                        if (remainder > 0) {
+                                share++;
+                                remainder--;
+                        }
+                        int historyIndex = missingIndexes.get(i);
+                        MpGainEntry neighbor = findNearestMpGainEntry(historyIndex);
+                        int baseWis = neighbor != null ? neighbor.getBaseWis() : getBaseWis();
+                        int originalWis = neighbor != null ? neighbor.getOriginalWis() : getOriginalWis();
+                        int statBonus = calcWisSeedBonus(baseWis);
+                        int originalBonus = features.getOriginalMpBonus(originalWis);
+                        int random = share - statBonus - originalBonus;
+                        if (random < Short.MIN_VALUE) {
+                                random = Short.MIN_VALUE;
+                        } else if (random > Short.MAX_VALUE) {
+                                random = Short.MAX_VALUE;
+                        }
+                        MpGainEntry newEntry = new MpGainEntry((short) random, baseWis, originalWis);
+                        _mpGainHistory.set(historyIndex, newEntry);
+                }
+        }
+
+        private HpGainEntry findNearestHpGainEntry(int index) {
+                int size = _hpGainHistory.size();
+                for (int offset = 1; offset < size; offset++) {
+                        int prev = index - offset;
+                        if (prev >= 0) {
+                                HpGainEntry previous = _hpGainHistory.get(prev);
+                                if (previous != null) {
+                                        return previous;
+                                }
+                        }
+                        int next = index + offset;
+                        if (next < size) {
+                                HpGainEntry following = _hpGainHistory.get(next);
+                                if (following != null) {
+                                        return following;
+                                }
+                        }
+                }
+                return null;
+        }
+
+        private MpGainEntry findNearestMpGainEntry(int index) {
+                int size = _mpGainHistory.size();
+                for (int offset = 1; offset < size; offset++) {
+                        int prev = index - offset;
+                        if (prev >= 0) {
+                                MpGainEntry previous = _mpGainHistory.get(prev);
+                                if (previous != null) {
+                                        return previous;
+                                }
+                        }
+                        int next = index + offset;
+                        if (next < size) {
+                                MpGainEntry following = _mpGainHistory.get(next);
+                                if (following != null) {
+                                        return following;
+                                }
+                        }
+                }
+                return null;
         }
 
         private short removeHpGainForLevel(int level) {
