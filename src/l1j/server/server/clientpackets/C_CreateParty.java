@@ -109,8 +109,7 @@ public class C_CreateParty extends ClientBasePacket {
         }
 
         public static boolean inviteToParty(L1PcInstance pc, L1PcInstance targetPc) {
-                if ((pc.getId() == targetPc.getId()) || pc.getMapId() != targetPc.getMapId()
-                                || pc.getLocation().getTileLineDistance(targetPc.getLocation()) > 15) {
+                if (pc.getId() == targetPc.getId()) {
                         return false;
                 }
 
