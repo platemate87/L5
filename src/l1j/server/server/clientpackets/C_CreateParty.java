@@ -41,31 +41,11 @@ public class C_CreateParty extends ClientBasePacket {
 		if (type == 0 || type == 1) {
 			int targetId = readD();
 			L1Object temp = L1World.getInstance().findObject(targetId);
-			if (temp instanceof L1PcInstance) {
-				L1PcInstance targetPc = (L1PcInstance) temp;
+                        if (temp instanceof L1PcInstance) {
+                                L1PcInstance targetPc = (L1PcInstance) temp;
 
-				if ((pc.getId() == targetPc.getId()) || pc.getMapId() != targetPc.getMapId()
-						|| pc.getLocation().getTileLineDistance(targetPc.getLocation()) > 15) {
-					return;
-				}
-
-				if (targetPc.isInParty()) {
-					pc.sendPackets(new S_ServerMessage(415));
-					return;
-				}
-
-				if (pc.isInParty()) {
-					if (pc.getParty().isLeader(pc)) {
-						targetPc.setPartyID(pc.getId());
-						targetPc.sendPackets(new S_Message_YN(953, pc.getName()));
-					} else {
-						pc.sendPackets(new S_ServerMessage(416));
-					}
-				} else {
-					targetPc.setPartyID(pc.getId());
-					targetPc.sendPackets(new S_Message_YN(953, pc.getName()));
-				}
-			}
+                                inviteToParty(pc, targetPc);
+                        }
 		} else if (type == 2) {
 			String name = readS();
 			L1PcInstance targetPc = L1World.getInstance().getPlayer(name);
@@ -84,12 +64,12 @@ public class C_CreateParty extends ClientBasePacket {
 			}
 
 			if (pc.isInChatParty()) {
-				if (pc.getChatParty().isLeader(pc)) {
-					targetPc.setPartyID(pc.getId());
-					targetPc.sendPackets(new S_Message_YN(951, pc.getName()));
-				} else {
-					pc.sendPackets(new S_ServerMessage(416));
-				}
+                                if (pc.getChatParty().isLeader(pc)) {
+                                        targetPc.setPartyID(pc.getId());
+                                        targetPc.sendPackets(new S_Message_YN(951, pc.getName()));
+                                } else {
+                                        pc.sendPackets(new S_ServerMessage(416));
+                                }
 			} else {
 				targetPc.setPartyID(pc.getId());
 				targetPc.sendPackets(new S_Message_YN(951, pc.getName()));
@@ -123,8 +103,35 @@ public class C_CreateParty extends ClientBasePacket {
 		}
 	}
 
-	@Override
-	public String getType() {
-		return C_CREATE_PARTY;
-	}
+        @Override
+        public String getType() {
+                return C_CREATE_PARTY;
+        }
+
+        public static boolean inviteToParty(L1PcInstance pc, L1PcInstance targetPc) {
+                if ((pc.getId() == targetPc.getId()) || pc.getMapId() != targetPc.getMapId()
+                                || pc.getLocation().getTileLineDistance(targetPc.getLocation()) > 15) {
+                        return false;
+                }
+
+                if (targetPc.isInParty()) {
+                        pc.sendPackets(new S_ServerMessage(415));
+                        return false;
+                }
+
+                if (pc.isInParty()) {
+                        if (pc.getParty().isLeader(pc)) {
+                                targetPc.setPartyID(pc.getId());
+                                targetPc.sendPackets(new S_Message_YN(953, pc.getName()));
+                                return true;
+                        }
+
+                        pc.sendPackets(new S_ServerMessage(416));
+                        return false;
+                }
+
+                targetPc.setPartyID(pc.getId());
+                targetPc.sendPackets(new S_Message_YN(953, pc.getName()));
+                return true;
+        }
 }

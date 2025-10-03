@@ -65,14 +65,17 @@ public class C_Chat extends ClientBasePacket {
 
 		// A lambda, a lambda, my kingdom for a (concise!) lambda.
 		switch (chatType) {
-		case 0:
-			if (pc.isGhost() && !pc.isGm()) {
-				return;
-			}
-			if (chatText.startsWith(".")) {
-				String cmd = chatText.substring(1);
-				GMCommands.getInstance().handleCommands(pc, cmd);
-				return;
+                case 0:
+                        if (pc.isGhost() && !pc.isGm()) {
+                                return;
+                        }
+                        if (handleInviteCommand(pc, chatText)) {
+                                return;
+                        }
+                        if (chatText.startsWith(".")) {
+                                String cmd = chatText.substring(1);
+                                GMCommands.getInstance().handleCommands(pc, cmd);
+                                return;
 			} else if (chatText.startsWith("-")) {
 				String cmd = chatText.substring(1);
 				PCommands.getInstance().handleCommands(pc, cmd);
@@ -143,10 +146,33 @@ public class C_Chat extends ClientBasePacket {
 		default:
 		}
 
-		if (!pc.isGm()) {
-			pc.checkChatInterval();
-		}
-	}
+                if (!pc.isGm()) {
+                        pc.checkChatInterval();
+                }
+        }
+
+        private boolean handleInviteCommand(L1PcInstance pc, String chatText) {
+                final String command = "/invite";
+                if (!chatText.startsWith(command)) {
+                        return false;
+                }
+
+                String args = chatText.substring(command.length()).trim();
+                if (args.isEmpty()) {
+                        return true;
+                }
+
+                int spaceIndex = args.indexOf(' ');
+                String targetName = (spaceIndex == -1) ? args : args.substring(0, spaceIndex);
+                L1PcInstance targetPc = L1World.getInstance().getPlayer(targetName);
+                if (targetPc == null) {
+                        pc.sendPackets(new S_ServerMessage(109));
+                        return true;
+                }
+
+                C_CreateParty.inviteToParty(pc, targetPc);
+                return true;
+        }
 
 	private void normalChat(final L1PcInstance sender, final String text, final int type, final int range,
 			final int opcode) {
