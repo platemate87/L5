@@ -600,7 +600,8 @@ public final class Config {
 
 	public static boolean LIMIT_WEAPON_SWITCHING;
 
-	public static int MAX_SERVANT_SUMMONS;
+        public static int MAX_SERVANT_SUMMONS;
+        public static boolean INVENTORY_CHA;
 
 	public static boolean ALT_PET_HUNGER_STATUS_CHANGE;
 
@@ -700,7 +701,8 @@ public final class Config {
 			AUTO_BAN = Boolean.parseBoolean(serverSettings.getProperty("AutoBan", "False"));
 			STOP_DROP = Boolean.parseBoolean(serverSettings.getProperty("StopDrop", "False"));
 			ANIMATION_SPEED = Integer.parseInt(serverSettings.getProperty("DefaultAnimationSpeed", "720"));
-			MAX_SERVANT_SUMMONS = Integer.parseInt(serverSettings.getProperty("MaxServantSummons", "100"));
+                        MAX_SERVANT_SUMMONS = Integer.parseInt(serverSettings.getProperty("MaxServantSummons", "100"));
+                        INVENTORY_CHA = Boolean.parseBoolean(serverSettings.getProperty("inventorycha", "True"));
 
 			REPORT_HOURS_RESET = Integer.parseInt(serverSettings.getProperty("ReportHoursReset", "24"));
 			REPORT_TIME_MINUTES = Integer.parseInt(serverSettings.getProperty("ReportTimeMinutes", "10"));
