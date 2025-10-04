@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import l1j.server.L1DatabaseFactory;
 import l1j.server.server.model.Instance.L1NpcInstance;
 import l1j.server.server.templates.L1Npc;
+import l1j.server.server.templates.L1NpcTransformationStage;
 import l1j.server.server.utils.SQLUtil;
 
 public class NpcTable {
@@ -86,9 +87,10 @@ public class NpcTable {
 			con = L1DatabaseFactory.getInstance().getConnection();
 			pstm = con.prepareStatement("SELECT * FROM npc");
 			rs = pstm.executeQuery();
-			while (rs.next()) {
-				L1Npc npc = new L1Npc();
-				int npcId = rs.getInt("npcid");
+                        NpcTransformStageLoader stageLoader = NpcTransformStageLoader.getInstance();
+                        while (rs.next()) {
+                                L1Npc npc = new L1Npc();
+                                int npcId = rs.getInt("npcid");
 				npc.set_npcId(npcId);
 				npc.set_name(rs.getString("name"));
 				npc.set_nameid(rs.getString("nameid"));
@@ -160,11 +162,15 @@ public class NpcTable {
 				npc.setTransformGfxId(rs.getInt("transform_gfxid"));
 				npc.setLightSize(rs.getInt("light_size"));
 				npc.setAmountFixed(rs.getBoolean("amount_fixed"));
-				npc.setChangeHead(rs.getBoolean("change_head"));
-				npc.setCantResurrect(rs.getBoolean("cant_resurrect"));
-				registerConstructorCache(npc.getImpl());
-				_npcs.put(npcId, npc);
-			}
+                                npc.setChangeHead(rs.getBoolean("change_head"));
+                                npc.setCantResurrect(rs.getBoolean("cant_resurrect"));
+                                List<L1NpcTransformationStage> stages = stageLoader.getStages(npcId);
+                                if (!stages.isEmpty()) {
+                                        npc.setTransformationStages(stages);
+                                }
+                                registerConstructorCache(npc.getImpl());
+                                _npcs.put(npcId, npc);
+                        }
 		} catch (SQLException e) {
 			_log.error(e.getLocalizedMessage(), e);
 		} finally {
