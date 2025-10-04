@@ -113,16 +113,19 @@ import l1j.server.server.model.ZoneType;
 import l1j.server.server.model.classes.L1ClassFeature;
 import l1j.server.server.model.classes.L1ClassId;
 import l1j.server.server.model.gametime.L1GameTimeCarrier;
+import l1j.server.server.model.map.L1Map;
 import l1j.server.server.model.map.L1MapLimiter;
 import l1j.server.server.model.monitor.L1PcAutoUpdate;
 import l1j.server.server.model.monitor.L1PcExpMonitor;
 import l1j.server.server.model.monitor.L1PcGhostMonitor;
 import l1j.server.server.model.monitor.L1PcHellMonitor;
 import l1j.server.server.model.monitor.L1PcInvisDelay;
+import l1j.server.server.model.monitor.L1TargetLockMonitor;
 import l1j.server.server.model.skill.L1SkillId;
 import l1j.server.server.model.skill.L1SkillUse;
 import l1j.server.server.network.Client;
 import l1j.server.server.network.DelayedPacket;
+import l1j.server.server.serverpackets.S_MoveCharPacket;
 import l1j.server.server.serverpackets.S_BlueMessage;
 import l1j.server.server.serverpackets.S_CastleMaster;
 import l1j.server.server.serverpackets.S_ChangeShape;
@@ -168,11 +171,13 @@ public class L1PcInstance extends L1Character {
 	private static final long DELAY_INVIS = 3000L;
 	private static final int HP_REGEN_INTERVAL = 1000;
 
-	private static final long INTERVAL_AUTO_UPDATE = 300;
-	private static final long INTERVAL_EXP_MONITOR = 500;
-	private static final int MP_REGEN_INTERVAL = 1000;
-	private static final long serialVersionUID = 1L;
-	private ScheduledFuture<?> _teleDelayFuture;
+private static final long INTERVAL_AUTO_UPDATE = 300;
+private static final long INTERVAL_EXP_MONITOR = 500;
+private static final int MP_REGEN_INTERVAL = 1000;
+private static final long serialVersionUID = 1L;
+private static final int[] TARGET_LOCK_MOVE_X = { 0, 1, 1, 1, 0, -1, -1, -1 };
+private static final int[] TARGET_LOCK_MOVE_Y = { -1, -1, 0, 1, 1, 1, 0, -1 };
+private ScheduledFuture<?> _teleDelayFuture;
 
 	boolean _rpActive = false;
 
@@ -545,9 +550,13 @@ public class L1PcInstance extends L1Character {
 
 	private int _advenHp;
 
-	private int _advenMp;
+private int _advenMp;
 
-	private ScheduledFuture<?> _autoUpdateFuture;
+private ScheduledFuture<?> _autoUpdateFuture;
+
+private ScheduledFuture<?> _targetLockFuture;
+
+private volatile int _targetLockId;
 
 	private int _awakeSkillId = 0;
 
@@ -3196,10 +3205,11 @@ public class L1PcInstance extends L1Character {
 		return L1ClassId.isMage(getClassId());
 	}
 
-	public void logout() {
-		L1World world = L1World.getInstance();
-		if (getClanid() != 0) {
-			L1Clan clan = world.getClan(getClanname());
+public void logout() {
+L1World world = L1World.getInstance();
+clearTargetLock();
+if (getClanid() != 0) {
+L1Clan clan = world.getClan(getClanname());
 			if (clan != null) {
 				if (clan.getWarehouseUsingChar() == getId()) {
 					clan.setWarehouseUsingChar(0);
@@ -4511,24 +4521,169 @@ public class L1PcInstance extends L1Character {
 				INTERVAL_AUTO_UPDATE);
 	}
 
-	public void stopEtcMonitor() {
-		if (_autoUpdateFuture != null) {
-			_autoUpdateFuture.cancel(true);
-			_autoUpdateFuture = null;
-		}
-		if (_expMonitorFuture != null) {
-			_expMonitorFuture.cancel(true);
-			_expMonitorFuture = null;
-		}
-		if (_ghostFuture != null) {
-			_ghostFuture.cancel(true);
-			_ghostFuture = null;
-		}
-		if (_hellFuture != null) {
-			_hellFuture.cancel(true);
-			_hellFuture = null;
-		}
-	}
+public void stopEtcMonitor() {
+if (_autoUpdateFuture != null) {
+_autoUpdateFuture.cancel(true);
+_autoUpdateFuture = null;
+}
+if (_expMonitorFuture != null) {
+_expMonitorFuture.cancel(true);
+_expMonitorFuture = null;
+}
+if (_ghostFuture != null) {
+_ghostFuture.cancel(true);
+_ghostFuture = null;
+}
+if (_hellFuture != null) {
+_hellFuture.cancel(true);
+_hellFuture = null;
+}
+stopTargetLockAssist();
+}
+
+public void setTargetLock(L1Character target) {
+if (target == null) {
+clearTargetLock();
+return;
+}
+_targetLockId = target.getId();
+}
+
+public void clearTargetLock() {
+_targetLockId = 0;
+stopTargetLockAssist();
+}
+
+public boolean hasTargetLock() {
+return _targetLockId != 0;
+}
+
+public L1Character getTargetLockTarget() {
+int targetId = _targetLockId;
+if (targetId == 0) {
+return null;
+}
+L1Object obj = L1World.getInstance().findObject(targetId);
+if (!(obj instanceof L1Character)) {
+clearTargetLock();
+return null;
+}
+return (L1Character) obj;
+}
+
+public synchronized void startTargetLockAssist() {
+if (!Config.ENABLE_TARGET_LOCK_ASSIST) {
+return;
+}
+if (_targetLockId == 0) {
+return;
+}
+if (_targetLockFuture != null) {
+return;
+}
+int interval = Config.TARGET_LOCK_ASSIST_INTERVAL;
+if (interval <= 0) {
+interval = 200;
+}
+interval = Math.max(50, interval);
+_targetLockFuture = GeneralThreadPool.getInstance()
+.pcScheduleAtFixedRate(new L1TargetLockMonitor(getId()), 0L, interval);
+}
+
+public synchronized void stopTargetLockAssist() {
+if (_targetLockFuture != null) {
+_targetLockFuture.cancel(true);
+_targetLockFuture = null;
+}
+}
+
+public void onTargetLockMonitorTick() {
+if (!Config.ENABLE_TARGET_LOCK_ASSIST) {
+stopTargetLockAssist();
+return;
+}
+L1Character target = getTargetLockTarget();
+if (target == null) {
+stopTargetLockAssist();
+return;
+}
+if (isGhost() || isDead() || isTeleport() || isInvisble() || isInvisDelay()) {
+stopTargetLockAssist();
+return;
+}
+if (getInventory().getWeight240() >= 197) {
+sendPackets(new S_ServerMessage(110));
+stopTargetLockAssist();
+return;
+}
+if (target.isDead() || target.getMapId() != getMapId()) {
+clearTargetLock();
+return;
+}
+double distance = getLocation().getLineDistance(target.getLocation());
+if (distance > 20D) {
+clearTargetLock();
+return;
+}
+int range = getTargetLockRange();
+if (!isAttackPosition(target.getX(), target.getY(), range)) {
+if (!moveTowardsTarget(target)) {
+stopTargetLockAssist();
+}
+return;
+}
+if (Config.CHECK_ATTACK_INTERVAL) {
+int result = getAcceleratorChecker().checkInterval(AcceleratorChecker.ACT_TYPE.ATTACK);
+if (result == AcceleratorChecker.R_LIMITEXCEEDED) {
+return;
+}
+}
+if (hasSkillEffect(ABSOLUTE_BARRIER)) {
+killSkillEffectTimer(ABSOLUTE_BARRIER);
+startHpRegeneration();
+startMpRegeneration();
+startMpRegenerationByDoll();
+}
+killSkillEffectTimer(MEDITATION);
+delInvis();
+setRegenState(REGENSTATE_ATTACK);
+setHeading(targetDirection(target.getX(), target.getY()));
+target.onAction(this);
+}
+
+private int getTargetLockRange() {
+L1ItemInstance weapon = getWeapon();
+if (weapon != null && weapon.getItem() != null) {
+int range = weapon.getItem().getRange();
+if (range > 0) {
+return range;
+}
+}
+return 1;
+}
+
+private boolean moveTowardsTarget(L1Character target) {
+int dir = targetDirection(target.getX(), target.getY());
+int newX = getX() + TARGET_LOCK_MOVE_X[dir];
+int newY = getY() + TARGET_LOCK_MOVE_Y[dir];
+L1Map map = getMap();
+if (map == null) {
+return false;
+}
+map.setPassable(getLocation(), true);
+if (!map.isPassable(newX, newY)) {
+map.setPassable(getLocation(), false);
+return false;
+}
+setHeading(dir);
+getLocation().set(newX, newY);
+setRegenState(REGENSTATE_MOVE);
+S_MoveCharPacket movePacket = new S_MoveCharPacket(this);
+sendPackets(movePacket);
+broadcastPacket(movePacket);
+map.setPassable(getLocation(), false);
+return true;
+}
 
 	public void stopHpRegeneration() {
 		if (_hpRegenActive) {
