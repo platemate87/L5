@@ -18,7 +18,6 @@
  */
 package l1j.server.server.model.map;
 
-import java.io.IOException;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -59,23 +58,11 @@ public class L1WorldMap {
 	/**
 	 * The map information to hold L1Map returns.
 	 */
-        public L1Map getMap(short mapId) {
-                L1Map map = _maps.get((int) mapId);
-                if (map == null) {
-                        map = L1Map.newNull();
-                }
-                return map;
-        }
-
-        public synchronized void reloadMap(short mapId) {
-                try {
-                        MapReader reader = MapReader.getDefaultReader();
-                        L1Map map = reader.read(mapId);
-                        if (map != null) {
-                                _maps.put((int) mapId, map);
-                        }
-                } catch (IOException e) {
-                        _log.error("Failed to reload map " + mapId, e);
-                }
-        }
+	public L1Map getMap(short mapId) {
+		L1Map map = _maps.get((int) mapId);
+		if (map == null) {
+			map = L1Map.newNull();
+		}
+		return map;
+	}
 }
