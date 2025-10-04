@@ -59,12 +59,12 @@ public class CachedMapReader extends MapReader {
 		return ids;
 	}
 
-	private L1V1Map cacheMap(final int mapId) throws IOException {
-		File file = new File(CACHE_DIR);
-		if (!file.exists()) {
-			file.mkdir();
-		}
-		L1V1Map map = (L1V1Map) new TextMapReader().read(mapId);
+        private L1V1Map cacheMap(final int mapId) throws IOException {
+                File file = new File(CACHE_DIR);
+                if (!file.exists()) {
+                        file.mkdir();
+                }
+                L1V1Map map = (L1V1Map) new TextMapReader().read(mapId);
 		DataOutputStream out = new DataOutputStream(
 				new BufferedOutputStream(new FileOutputStream(CACHE_DIR + mapId + ".map")));
 		out.writeInt(map.getId());
@@ -113,12 +113,25 @@ public class CachedMapReader extends MapReader {
 		return map;
 	}
 
-	@Override
-	public Map<Integer, L1Map> read() throws IOException {
-		Map<Integer, L1Map> maps = new HashMap<>();
-		for (int id : listMapIds()) {
-			maps.put(id, read(id));
-		}
-		return maps;
-	}
+        @Override
+        public Map<Integer, L1Map> read() throws IOException {
+                Map<Integer, L1Map> maps = new HashMap<>();
+                for (int id : listMapIds()) {
+                        maps.put(id, read(id));
+                }
+                return maps;
+        }
+
+        public static L1Map rebuildCache(int mapId) throws IOException {
+                CachedMapReader reader = new CachedMapReader();
+                return reader.rebuild(mapId);
+        }
+
+        private L1Map rebuild(int mapId) throws IOException {
+                File cacheFile = new File(CACHE_DIR + mapId + ".map");
+                if (cacheFile.exists() && !cacheFile.delete()) {
+                        throw new IOException("Could not delete old map cache file for mapId " + mapId);
+                }
+                return cacheMap(mapId);
+        }
 }
