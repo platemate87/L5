@@ -18,6 +18,7 @@
  */
 package l1j.server.server.model;
 
+import static l1j.server.server.model.item.L1ItemId.ARCANE_STORMBLADE;
 import static l1j.server.server.model.item.L1ItemId.EDORYU_OF_RONDE;
 import static l1j.server.server.model.item.L1ItemId.EVAS_SCORN;
 import static l1j.server.server.model.item.L1ItemId.LONGBOW_OF_MOON;
@@ -80,6 +81,8 @@ public class L1WeaponSkill {
 	private static final int LightningEdgeChance = 4;
 	private static final int FrozenSpearChance = 5;
 	private static final int WindAxeChance = 4;
+        private static final int ArcaneStormbladeChance = 25;
+        private static final int[] ArcaneStormbladeEffects = { 10, 190, 191, 192, 2166, 2167, 2168, 2169, 6319, 6320 };
 
 	private static final int FettersTime = 8000;
 	// Basically arbitrary, but default to casting procs like a level 48 mage.
@@ -188,6 +191,16 @@ public class L1WeaponSkill {
 			return 0;
 
 		switch (weaponId) {
+		case ARCANE_STORMBLADE:
+			ThreadLocalRandom random = ThreadLocalRandom.current();
+			if (random.nextInt(100) < ArcaneStormbladeChance) {
+				int effectId = ArcaneStormbladeEffects[random
+					.nextInt(ArcaneStormbladeEffects.length)];
+				int damage = random.nextInt(91) + 30;
+				return handleProc(attacker, target, damage, Element.None,
+					new S_SkillSound(target.getId(), effectId));
+			}
+			return 0;
 		case 124:
 			return getBaphometStaffDamage(attacker, target);
 		case 204:
