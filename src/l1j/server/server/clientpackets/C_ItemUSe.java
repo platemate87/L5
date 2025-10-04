@@ -590,8 +590,6 @@ public class C_ItemUSe extends ClientBasePacket {
                                 if (target == null || target.getItem().getType2() == 0) {
                                         target = pc.getWeapon();
                                 }
-
-                                boolean repaired = false;
                                 if (target != null && target.getItem().getType2() != 0 && target.get_durability() > 0) {
                                         inventory.recoveryDamage(target);
                                         String msg0 = target.getLogName();
@@ -600,10 +598,6 @@ public class C_ItemUSe extends ClientBasePacket {
                                         } else {
                                                 pc.sendPackets(new S_ServerMessage(463, msg0)); // 'item`s' condition got better.
                                         }
-                                        repaired = true;
-                                }
-
-                                if (repaired) {
                                         inventory.removeItem(l1iteminstance, 1);
                                 } else {
                                         pc.sendPackets(new S_ServerMessage(79)); // Nothing happened.
