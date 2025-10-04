@@ -39,41 +39,43 @@ public class TargetLockController {
 		return INSTANCE;
 	}
 
-        public void handleLockRequest(L1PcInstance pc, int requestedTargetId) {
-                if (pc == null || !Config.ENABLE_TARGET_LOCK_ASSIST) {
-                        return;
-                }
+	public void handleLockRequest(L1PcInstance pc, int requestedTargetId) {
+		if (pc == null || !Config.ENABLE_TARGET_LOCK_ASSIST) {
+			return;
+		}
 
-                boolean allowNearest = requestedTargetId <= 0 && !pc.hasTargetLock();
-                L1Character target = resolveTarget(pc, requestedTargetId, allowNearest);
-                if (target != null) {
-                        pc.setTargetLock(target);
-                        pc.showTargetLockSelectionIndicator(target);
-                        return;
-                }
+		boolean allowNearest = requestedTargetId <= 0 && !pc.hasTargetLock();
+		L1Character target = resolveTarget(pc, requestedTargetId, allowNearest);
+		if (target != null) {
+			pc.setTargetLock(target);
+			pc.showTargetLockSelectionIndicator(target);
+			pc.sendPackets(new S_SystemMessage(String.format("Target locked: %s", target.getName())));
+			return;
+		}
 
-                pc.clearTargetLock();
-        }
+		pc.clearTargetLock();
+		pc.sendPackets(new S_SystemMessage("Target lock cleared."));
+	}
 
-        public void handleAttackRequest(L1PcInstance pc, int requestedTargetId, int clickX, int clickY) {
-                if (pc == null || !Config.ENABLE_TARGET_LOCK_ASSIST) {
-                        return;
-                }
+	public void handleAttackRequest(L1PcInstance pc, int requestedTargetId, int clickX, int clickY) {
+		if (pc == null || !Config.ENABLE_TARGET_LOCK_ASSIST) {
+			return;
+		}
 
-                L1Character target = pc.getTargetLockTarget();
-                if (target == null || (requestedTargetId > 0 && target.getId() != requestedTargetId)) {
-                        boolean allowNearest = requestedTargetId <= 0;
-                        target = resolveTarget(pc, requestedTargetId, allowNearest);
-                }
-                if (target == null) {
-                        pc.sendPackets(new S_SystemMessage("There is no valid monster to attack."));
-                        return;
-                }
+		L1Character target = pc.getTargetLockTarget();
+		if (target == null || (requestedTargetId > 0 && target.getId() != requestedTargetId)) {
+			boolean allowNearest = requestedTargetId <= 0;
+			target = resolveTarget(pc, requestedTargetId, allowNearest);
+		}
+		if (target == null) {
+			pc.sendPackets(new S_SystemMessage("There is no valid monster to attack."));
+			return;
+		}
 
-                pc.setTargetLock(target);
-                pc.showTargetLockSelectionIndicator(target);
-                pc.startTargetLockAssist();
-        }
+		pc.setTargetLock(target);
+		pc.showTargetLockSelectionIndicator(target);
+		pc.startTargetLockAssist();
+	}
 
 	private L1Character resolveTarget(L1PcInstance pc, int requestedTargetId, boolean allowNearest) {
 		L1Character target = null;
