@@ -18,9 +18,9 @@ without installing Java.
 
 ## Requirements
 
-- .NET 9 SDK on Windows (download from https://dotnet.microsoft.com/).
+- .NET 8 SDK (LTS) on Windows (download from https://dotnet.microsoft.com/).
 - Windows Desktop workload (e.g., `dotnet workload install windows`) **or** Windows 10 SDK 19041+
-  installed alongside the .NET 9 SDK to provide WinForms dependencies.
+  installed alongside the .NET 8 SDK to provide WinForms dependencies.
 - No Java runtime is required for the C# editor.
 
 ## Running the editor

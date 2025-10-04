@@ -58,8 +58,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import l1j.server.Config;
+import l1j.server.server.clientpackets.C_CreateParty;
 import l1j.server.server.datatables.LogReporterTable;
 import l1j.server.server.datatables.NpcSpawnTable;
+import l1j.server.server.model.L1Clan;
 import l1j.server.server.model.L1Object;
 import l1j.server.server.model.L1Teleport;
 import l1j.server.server.model.L1World;
@@ -69,6 +71,7 @@ import l1j.server.server.model.Instance.L1ItemInstance;
 import l1j.server.server.model.Instance.L1NpcInstance;
 import l1j.server.server.model.Instance.L1PcInstance;
 import l1j.server.server.model.skill.L1SkillUse;
+import l1j.server.server.serverpackets.S_ServerMessage;
 import l1j.server.server.serverpackets.S_SystemMessage;
 import l1j.server.server.utils.CalcStat;
 import l1j.server.server.model.item.L1ItemId;
@@ -91,9 +94,13 @@ public class PCommands {
 	private static final S_SystemMessage DropHelp = new S_SystemMessage(
 			"-drop [all|mine|party] [on|off] toggles drop messages.");
         private static final S_SystemMessage CommandsHelp = new S_SystemMessage(
-                        "-warp 1-10, -karma, -buff, -stats, -bug, -drop, -help, -dkbuff, -dmg, -potions, -report");
+                        "-warp 1-10, -karma, -buff, -stats, -bug, -drop, -help, -dkbuff, -dmg, -potions, -invite, -bpp, -report");
         private static final S_SystemMessage CommandsHelpNoBuff = new S_SystemMessage(
-                        "-rank, -warp 1-10, -karma, -stats, -bug, -drop, -help");
+                        "-rank, -warp 1-10, -karma, -stats, -bug, -drop, -help, -invite, -bpp");
+        private static final S_SystemMessage InviteUsage = new S_SystemMessage("-invite <playername>");
+        private static final S_SystemMessage InviteDisabled = new S_SystemMessage("The -invite command is disabled.");
+        private static final S_SystemMessage BloodPledgePartyUsage = new S_SystemMessage("Use -bpp to invite eligible clan members to your party.");
+        private static final S_SystemMessage BloodPledgePartyDisabled = new S_SystemMessage("The -bpp command is disabled.");
         private static final S_SystemMessage NoBuff = new S_SystemMessage("The -buff command is disabled.");
         private static final S_SystemMessage CannotBuff = new S_SystemMessage(
                         "You cannot use -buff in your current state.");
@@ -223,12 +230,12 @@ public class PCommands {
 				setPotionOptions(player, cmd2);
 			} else if (cmd2.startsWith("turn")) {
 				turnAllStones(player);
-			} else if (cmd2.startsWith("report")) {
-				try {
-					String args[] = cmd2.split(" ");
+                        } else if (cmd2.startsWith("report")) {
+                                try {
+                                        String args[] = cmd2.split(" ");
 
-					if (args.length < 3) {
-						player.sendPackets(new S_SystemMessage("You must enter a reason!"));
+                                        if (args.length < 3) {
+                                                player.sendPackets(new S_SystemMessage("You must enter a reason!"));
 						return;
 					}
 
@@ -296,14 +303,100 @@ public class PCommands {
 					// target.getNetConnection().clearClientPacketLog();
 					// LogReporterTable.updatePacketStartTimestamp(insertedId, firstPacketOfLog);
 				} catch (Exception ex) {
-					player.sendPackets(ReportHelp);
-				}
-			}
-			_log.trace(player.getName() + " used " + cmd2);
-		} catch (Exception e) {
-			_log.error(e.getLocalizedMessage(), e);
-		}
-	}
+                                        player.sendPackets(ReportHelp);
+                                }
+                        } else if (cmd2.startsWith("bpp")) {
+                                inviteBloodPledgeParty(player, cmd2);
+                        } else if (cmd2.startsWith("invite")) {
+                                invite(player, cmd2);
+                        }
+                        _log.trace(player.getName() + " used " + cmd2);
+                } catch (Exception e) {
+                        _log.error(e.getLocalizedMessage(), e);
+                }
+        }
+
+        private void invite(L1PcInstance player, String cmd2) {
+                if (!Config.PLAYER_COMMANDS) {
+                        player.sendPackets(InviteDisabled);
+                        return;
+                }
+
+                String[] args = cmd2.split("\\s+");
+                if (args.length < 2) {
+                        player.sendPackets(InviteUsage);
+                        return;
+                }
+
+                String targetName = args[1];
+                if (targetName.isEmpty()) {
+                        player.sendPackets(InviteUsage);
+                        return;
+                }
+
+                L1PcInstance target = L1World.getInstance().getPlayer(targetName);
+                if (target == null) {
+                        player.sendPackets(new S_ServerMessage(109));
+                        return;
+                }
+
+                C_CreateParty.inviteByName(player, target);
+        }
+
+        private void inviteBloodPledgeParty(L1PcInstance player, String cmd2) {
+                if (!Config.PLAYER_COMMANDS) {
+                        player.sendPackets(BloodPledgePartyDisabled);
+                        return;
+                }
+
+                String[] args = cmd2.split("\\s+");
+                if (args.length > 1) {
+                        player.sendPackets(BloodPledgePartyUsage);
+                        return;
+                }
+
+                if (player.getClanid() == 0) {
+                        player.sendPackets(new S_ServerMessage(S_ServerMessage.NO_PLEDGE));
+                        return;
+                }
+
+                L1Clan clan = player.getClan();
+                if (clan == null) {
+                        player.sendPackets(new S_ServerMessage(S_ServerMessage.NO_PLEDGE));
+                        return;
+                }
+
+                if (player.isInParty() && !player.getParty().isLeader(player)) {
+                        player.sendPackets(new S_ServerMessage(416));
+                        return;
+                }
+
+                int invitesSent = 0;
+                for (L1PcInstance member : clan.getOnlineClanMember()) {
+                        if (member == null) {
+                                continue;
+                        }
+                        if (member.getId() == player.getId()) {
+                                continue;
+                        }
+                        if (member.isInParty()) {
+                                continue;
+                        }
+                        if (member.isInChatParty()) {
+                                continue;
+                        }
+                        if (C_CreateParty.inviteToParty(player, member)) {
+                                invitesSent++;
+                        }
+                }
+
+                if (invitesSent > 0) {
+                        player.sendPackets(new S_SystemMessage("Invited " + invitesSent + " clan member"
+                                        + (invitesSent > 1 ? "s" : "") + " to your party."));
+                } else {
+                        player.sendPackets(new S_SystemMessage("No eligible clan members were available for party invitations."));
+                }
+        }
 
         public void showPHelp(L1PcInstance player) {
                 player.sendPackets(Config.PLAYER_BUFF && Config.PLAYER_COMMANDS ? CommandsHelp : CommandsHelpNoBuff);
