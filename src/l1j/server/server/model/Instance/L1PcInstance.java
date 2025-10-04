@@ -134,6 +134,7 @@ import l1j.server.server.serverpackets.S_ChangeShape;
 import l1j.server.server.serverpackets.S_Disconnect;
 import l1j.server.server.serverpackets.S_DoActionGFX;
 import l1j.server.server.serverpackets.S_DoActionShop;
+import l1j.server.server.serverpackets.S_EffectLocation;
 import l1j.server.server.serverpackets.S_EquipmentWindow;
 import l1j.server.server.serverpackets.S_Exp;
 import l1j.server.server.serverpackets.S_HPMeter;
@@ -179,6 +180,9 @@ private static final int MP_REGEN_INTERVAL = 1000;
 private static final long serialVersionUID = 1L;
 private static final int[] TARGET_LOCK_MOVE_X = { 0, 1, 1, 1, 0, -1, -1, -1 };
 private static final int[] TARGET_LOCK_MOVE_Y = { -1, -1, 0, 1, 1, 1, 0, -1 };
+private static final int TARGET_LOCK_INDICATOR_TEAL_GFX = 8611;
+private static final int TARGET_LOCK_INDICATOR_PURPLE_GFX = 8612;
+private static final int TARGET_LOCK_INDICATOR_CLEAR_GFX = 0;
 private ScheduledFuture<?> _teleDelayFuture;
 
 	boolean _rpActive = false;
@@ -559,6 +563,22 @@ private ScheduledFuture<?> _autoUpdateFuture;
 private ScheduledFuture<?> _targetLockFuture;
 
 private volatile int _targetLockId;
+
+private volatile int _targetLockIndicatorTargetId;
+
+private int _targetLockIndicatorX;
+
+private int _targetLockIndicatorY;
+
+private short _targetLockIndicatorMapId;
+
+private TargetLockIndicatorColor _targetLockIndicatorColor = TargetLockIndicatorColor.NONE;
+
+private enum TargetLockIndicatorColor {
+        NONE,
+        TEAL,
+        PURPLE
+}
 
 	private int _awakeSkillId = 0;
 
@@ -4552,6 +4572,7 @@ _targetLockId = target.getId();
 }
 
 public void clearTargetLock() {
+clearTargetLockIndicator();
 _targetLockId = 0;
 stopTargetLockAssist();
 }
@@ -4590,6 +4611,10 @@ interval = 200;
 interval = Math.max(50, interval);
 _targetLockFuture = GeneralThreadPool.getInstance()
 .pcScheduleAtFixedRate(new L1TargetLockMonitor(getId()), 0L, interval);
+L1Character target = getTargetLockTarget();
+if (target != null) {
+showTargetLockAssistIndicator(target);
+}
 }
 
 public synchronized void stopTargetLockAssist() {
@@ -4597,6 +4622,83 @@ if (_targetLockFuture != null) {
 _targetLockFuture.cancel(true);
 _targetLockFuture = null;
 }
+revertTargetLockIndicatorToIdle();
+}
+
+public void showTargetLockSelectionIndicator(L1Character target) {
+updateTargetLockIndicator(target, TargetLockIndicatorColor.TEAL);
+}
+
+public void showTargetLockAssistIndicator(L1Character target) {
+updateTargetLockIndicator(target, TargetLockIndicatorColor.PURPLE);
+}
+
+private void revertTargetLockIndicatorToIdle() {
+if (!Config.ENABLE_TARGET_LOCK_ASSIST) {
+clearTargetLockIndicator();
+return;
+}
+L1Character target = getTargetLockTarget();
+if (target == null) {
+clearTargetLockIndicator();
+return;
+}
+updateTargetLockIndicator(target, TargetLockIndicatorColor.TEAL);
+}
+
+private void updateTargetLockIndicator(L1Character target, TargetLockIndicatorColor color) {
+if (!Config.ENABLE_TARGET_LOCK_ASSIST) {
+return;
+}
+if (target == null) {
+clearTargetLockIndicator();
+return;
+}
+if (target.isDead()) {
+clearTargetLockIndicator();
+return;
+}
+if (target.getMapId() != getMapId()) {
+clearTargetLockIndicator();
+return;
+}
+boolean targetChanged = _targetLockIndicatorTargetId != 0 && _targetLockIndicatorTargetId != target.getId();
+if (targetChanged) {
+sendTargetLockIndicatorPacket(_targetLockIndicatorX, _targetLockIndicatorY, TARGET_LOCK_INDICATOR_CLEAR_GFX);
+}
+int targetX = target.getX();
+int targetY = target.getY();
+boolean colorChanged = _targetLockIndicatorColor != color;
+boolean positionChanged = _targetLockIndicatorX != targetX || _targetLockIndicatorY != targetY;
+if (targetChanged || colorChanged || positionChanged) {
+int gfxId = color == TargetLockIndicatorColor.PURPLE ? TARGET_LOCK_INDICATOR_PURPLE_GFX : TARGET_LOCK_INDICATOR_TEAL_GFX;
+sendTargetLockIndicatorPacket(targetX, targetY, gfxId);
+}
+_targetLockIndicatorTargetId = target.getId();
+_targetLockIndicatorX = targetX;
+_targetLockIndicatorY = targetY;
+_targetLockIndicatorMapId = target.getMapId();
+_targetLockIndicatorColor = color;
+}
+
+private void clearTargetLockIndicator() {
+if (_targetLockIndicatorTargetId == 0) {
+return;
+}
+sendTargetLockIndicatorPacket(_targetLockIndicatorX, _targetLockIndicatorY, TARGET_LOCK_INDICATOR_CLEAR_GFX);
+_targetLockIndicatorTargetId = 0;
+_targetLockIndicatorColor = TargetLockIndicatorColor.NONE;
+_targetLockIndicatorX = 0;
+_targetLockIndicatorY = 0;
+_targetLockIndicatorMapId = 0;
+}
+
+private void sendTargetLockIndicatorPacket(int x, int y, int gfxId) {
+if (gfxId == TARGET_LOCK_INDICATOR_CLEAR_GFX && _targetLockIndicatorMapId != 0
+                && _targetLockIndicatorMapId != getMapId()) {
+return;
+}
+sendPackets(new S_EffectLocation(x, y, gfxId));
 }
 
 public void onTargetLockMonitorTick() {
@@ -4629,6 +4731,7 @@ return;
 }
 int range = getTargetLockRange();
 if (!isAttackPosition(target.getX(), target.getY(), range)) {
+showTargetLockSelectionIndicator(target);
 if (!moveTowardsTarget(target)) {
 stopTargetLockAssist();
 }
@@ -4637,6 +4740,7 @@ return;
 if (Config.CHECK_ATTACK_INTERVAL) {
 int result = getAcceleratorChecker().checkInterval(AcceleratorChecker.ACT_TYPE.ATTACK);
 if (result == AcceleratorChecker.R_LIMITEXCEEDED) {
+showTargetLockSelectionIndicator(target);
 return;
 }
 }
@@ -4650,6 +4754,7 @@ killSkillEffectTimer(MEDITATION);
 delInvis();
 setRegenState(REGENSTATE_ATTACK);
 setHeading(targetDirection(target.getX(), target.getY()));
+showTargetLockAssistIndicator(target);
 target.onAction(this);
 }
 
