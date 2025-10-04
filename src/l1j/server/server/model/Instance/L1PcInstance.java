@@ -1,5 +1,6 @@
 package l1j.server.server.model.Instance;
 
+import static l1j.server.server.model.skill.L1SkillId.ABSOLUTE_BARRIER;
 import static l1j.server.server.model.skill.L1SkillId.BLIND_HIDING;
 import static l1j.server.server.model.skill.L1SkillId.BLOODLUST;
 import static l1j.server.server.model.skill.L1SkillId.CANCELLATION;
@@ -17,6 +18,7 @@ import static l1j.server.server.model.skill.L1SkillId.HOLY_WALK;
 import static l1j.server.server.model.skill.L1SkillId.ILLUSION_AVATAR;
 import static l1j.server.server.model.skill.L1SkillId.INVISIBILITY;
 import static l1j.server.server.model.skill.L1SkillId.MASS_SLOW;
+import static l1j.server.server.model.skill.L1SkillId.MEDITATION;
 import static l1j.server.server.model.skill.L1SkillId.MORTAL_BODY;
 import static l1j.server.server.model.skill.L1SkillId.MOVING_ACCELERATION;
 import static l1j.server.server.model.skill.L1SkillId.SHAPE_CHANGE;
