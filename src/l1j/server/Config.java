@@ -820,7 +820,7 @@ public static boolean RESTRICT_ACCOUNT_IPS;
 			ENABLE_AUTO_QUEST_LEVEL15 = Boolean.parseBoolean(altSettings.getProperty("EnableAutoQuestLevel15", "True"));
                         ENABLE_AUTO_QUEST_LEVEL30 = Boolean.parseBoolean(altSettings.getProperty("EnableAutoQuestLevel30", "True"));
                         ENABLE_AUTO_QUEST_LEVEL50 = Boolean.parseBoolean(altSettings.getProperty("EnableAutoQuestLevel50", "True"));
-                        ENABLE_TARGET_LOCK_ASSIST = Boolean.parseBoolean(altSettings.getProperty("TargetLockAssistEnabled", "True"));
+                        ENABLE_TARGET_LOCK_ASSIST = Boolean.parseBoolean(altSettings.getProperty("TargetLockAssistEnabled", "False"));
                         TARGET_LOCK_ASSIST_INTERVAL = Integer.parseInt(altSettings.getProperty("TargetLockAssistInterval", "200"));
 
 

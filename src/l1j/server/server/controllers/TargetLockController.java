@@ -62,8 +62,7 @@ public class TargetLockController {
 
 		L1Character target = pc.getTargetLockTarget();
 		if (target == null || (requestedTargetId > 0 && target.getId() != requestedTargetId)) {
-			boolean allowNearest = requestedTargetId <= 0;
-			target = resolveTarget(pc, requestedTargetId, allowNearest);
+			target = resolveTarget(pc, requestedTargetId, true);
 		}
                 if (target == null) {
                         pc.sendPackets(new S_SystemMessage("There is no valid monster to attack."));
