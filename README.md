@@ -9,18 +9,21 @@ project info, the client connector, FAQ, and the setup guide.
 
 ## Map editing tool
 
-Designers can edit tile metadata with the Swing-based map editor in
-`tool/map-editor`. Build the server jar first so the tool can reuse the shared
-`L1Map` classes, then launch the editor:
+Designers now have two ways to tune tile metadata:
 
-```
-ant jar
-ant -f tool/map-editor/build.xml run
-```
+* **Windows-native C# editor** – open `tool/map-editor-cs/README.md` for the
+  .NET build/publish walkthrough. The WinForms client runs without Java and
+  exposes palette, brush/rectangle tools, passability + zone toggles, overlays,
+  undo/redo, a minimap, coordinate readout, and batch CSV export powered by the
+  existing `L1Map.toCsv()` data.
+* **Original Swing editor** – still available under `tool/map-editor`. Build the
+  shared server jar first so the tool can reuse the shared `L1Map` classes, then
+  launch the editor:
 
-The editor loads `maps/<mapId>.txt` CSV files, provides brush and rectangle
-painting, passability and zone overlays, undo/redo, a minimap preview, and
-exports modified maps back to CSV via `L1Map.toCsv()`.
+  ```
+  ant jar
+  ant -f tool/map-editor/build.xml run
+  ```
 
 ## Deployment notes
 
