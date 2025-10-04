@@ -53,6 +53,9 @@ public class L1MapInfo implements L1CommandExecutor {
                         case "save":
                                 handleSave(pc);
                                 break;
+                        case "revert":
+                                handleRevert(pc);
+                                break;
                         case "new":
                                 handleNew(pc, args);
                                 break;
@@ -97,6 +100,25 @@ public class L1MapInfo implements L1CommandExecutor {
 
                 pc.sendPackets(new S_SystemMessage("Map " + pc.getMapId() + " new values saved."));
                 pc.sendPackets(new S_SystemMessage("Backup created in the maps directory as " + backupMapFilename));
+        }
+
+        private void handleRevert(L1PcInstance pc) throws IOException {
+                String currentMapFilename = MAP_DIRECTORY + pc.getMapId() + ".txt";
+                String backupMapFilename = currentMapFilename + ".bak";
+
+                File backupMap = new File(backupMapFilename);
+                if (!backupMap.exists()) {
+                        pc.sendPackets(new S_SystemMessage("Backup file " + backupMap.getName() + " not found."));
+                        return;
+                }
+
+                File currentMap = new File(currentMapFilename);
+                FileUtil.copyFileUsingStream(backupMap, currentMap);
+
+                L1WorldMap.getInstance().reloadMap(pc.getMapId());
+
+                pc.sendPackets(new S_SystemMessage(
+                                "Map " + pc.getMapId() + " restored from backup " + backupMap.getName()));
         }
 
         private void handleNew(L1PcInstance pc, String[] args) throws SQLException, IOException {
@@ -286,6 +308,6 @@ public class L1MapInfo implements L1CommandExecutor {
 
         private void sendUsage(L1PcInstance pc) {
                 pc.sendPackets(new S_SystemMessage(
-                                ".map [info|update|save|new|meta set] (see .map meta set [mapId] <flag> <true|false>)"));
+                                ".map [info|update|save|revert|new|meta set] (see .map meta set [mapId] <flag> <true|false>)"));
         }
 }
