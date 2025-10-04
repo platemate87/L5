@@ -1,6 +1,5 @@
 package l1j.server.server.model.map.edit;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -16,7 +15,7 @@ import java.util.Set;
 
 import l1j.server.server.model.map.L1Map;
 import l1j.server.server.model.map.L1V1Map;
-import l1j.server.server.utils.FileUtil;
+import l1j.server.server.utils.MapEditorIOUtils;
 
 /**
  * Holds the editing state for a GM that is actively modifying a map. Sessions
@@ -425,13 +424,7 @@ public class MapEditSession {
                         sourceMap.setPassable(summary.getX(), summary.getY(), summary.isCurrentPassable());
                 }
 
-                String mapFilename = "./maps/" + mapId + ".txt";
-                File mapFile = new File(mapFilename);
-                if (mapFile.exists()) {
-                        File backupFile = new File(mapFilename + ".bak");
-                        FileUtil.copyFileUsingStream(mapFile, backupFile);
-                }
-                FileUtil.writeFile(mapFilename, sourceMap.toCsv());
+                MapEditorIOUtils.writeMapFile(mapId, sourceMap.toCsv(), true);
 
                 resetWorkingCopy();
                 return changedTiles;
