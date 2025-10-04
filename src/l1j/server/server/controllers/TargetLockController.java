@@ -55,12 +55,12 @@ public class TargetLockController {
                 pc.clearTargetLock();
         }
 
-	public void handleAttackRequest(L1PcInstance pc, int requestedTargetId, int clickX, int clickY) {
-		if (pc == null || !Config.ENABLE_TARGET_LOCK_ASSIST) {
-			return;
-		}
+        public void handleAttackRequest(L1PcInstance pc, int requestedTargetId, int clickX, int clickY) {
+                if (pc == null || !Config.ENABLE_TARGET_LOCK_ASSIST) {
+                        return;
+                }
 
-		L1Character target = pc.getTargetLockTarget();
+                L1Character target = pc.getTargetLockTarget();
                 if (target == null || (requestedTargetId > 0 && target.getId() != requestedTargetId)) {
                         boolean allowNearest = requestedTargetId <= 0;
                         target = resolveTarget(pc, requestedTargetId, allowNearest);

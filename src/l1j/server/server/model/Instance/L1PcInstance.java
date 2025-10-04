@@ -254,9 +254,8 @@ private ScheduledFuture<?> _teleDelayFuture;
 				Thread.currentThread().setName("L1PcInstance-Death");
 				L1Character lastAttacker = _lastAttacker;
 				_lastAttacker = null;
-                                setCurrentHp(0);
-                                setGresValid(false);
-                                clearTargetLock();
+				setCurrentHp(0);
+				setGresValid(false);
 
 				if (isTeleport()) {
 					GeneralThreadPool.getInstance().schedule(this, 300);
@@ -565,17 +564,11 @@ private ScheduledFuture<?> _autoUpdateFuture;
 private ScheduledFuture<?> _targetLockFuture;
 
 private volatile int _targetLockId;
-
 private volatile boolean _targetLockAssistActive;
-
 private volatile int _targetLockIndicatorTargetId;
-
 private int _targetLockIndicatorX;
-
 private int _targetLockIndicatorY;
-
 private short _targetLockIndicatorMapId;
-
 private TargetLockIndicatorColor _targetLockIndicatorColor = TargetLockIndicatorColor.NONE;
 private long _targetLockIndicatorLastBroadcastMillis;
 
@@ -3232,12 +3225,11 @@ private enum TargetLockIndicatorColor {
 		return L1ClassId.isMage(getClassId());
 	}
 
-
-	public void logout() {
-		L1World world = L1World.getInstance();
-		clearTargetLock();
-		if (getClanid() != 0) {
-			L1Clan clan = world.getClan(getClanname());
+public void logout() {
+L1World world = L1World.getInstance();
+clearTargetLock();
+if (getClanid() != 0) {
+L1Clan clan = world.getClan(getClanname());
 			if (clan != null) {
 				if (clan.getWarehouseUsingChar() == getId()) {
 					clan.setWarehouseUsingChar(0);
@@ -4549,19 +4541,19 @@ private enum TargetLockIndicatorColor {
 				INTERVAL_AUTO_UPDATE);
 	}
 
-        public void stopEtcMonitor() {
-                if (_autoUpdateFuture != null) {
-                        _autoUpdateFuture.cancel(true);
-                        _autoUpdateFuture = null;
-                }
-                if (_expMonitorFuture != null) {
-                        _expMonitorFuture.cancel(true);
-                        _expMonitorFuture = null;
-                }
-                if (_ghostFuture != null) {
-                        _ghostFuture.cancel(true);
-                        _ghostFuture = null;
-                }
+public void stopEtcMonitor() {
+if (_autoUpdateFuture != null) {
+_autoUpdateFuture.cancel(true);
+_autoUpdateFuture = null;
+}
+if (_expMonitorFuture != null) {
+_expMonitorFuture.cancel(true);
+_expMonitorFuture = null;
+}
+if (_ghostFuture != null) {
+_ghostFuture.cancel(true);
+_ghostFuture = null;
+}
                 if (_hellFuture != null) {
                         _hellFuture.cancel(true);
                         _hellFuture = null;
@@ -4624,17 +4616,17 @@ private enum TargetLockIndicatorColor {
         }
 
         public L1Character getTargetLockTarget() {
-                int targetId = _targetLockId;
-                if (targetId == 0) {
-                        return null;
-                }
-                L1Object obj = L1World.getInstance().findObject(targetId);
-                if (!(obj instanceof L1Character)) {
-                        clearTargetLock();
-                        return null;
-                }
-                return (L1Character) obj;
-        }
+int targetId = _targetLockId;
+if (targetId == 0) {
+return null;
+}
+L1Object obj = L1World.getInstance().findObject(targetId);
+if (!(obj instanceof L1Character)) {
+clearTargetLock();
+return null;
+}
+return (L1Character) obj;
+}
 
         public synchronized void startTargetLockAssist() {
                 if (!Config.ENABLE_TARGET_LOCK_ASSIST) {
@@ -4659,26 +4651,26 @@ private enum TargetLockIndicatorColor {
                 }
         }
 
-	public void showTargetLockSelectionIndicator(L1Character target) {
-		updateTargetLockIndicator(target, TargetLockIndicatorColor.TEAL);
-	}
+        public void showTargetLockSelectionIndicator(L1Character target) {
+                updateTargetLockIndicator(target, TargetLockIndicatorColor.TEAL);
+        }
 
-	public void showTargetLockAssistIndicator(L1Character target) {
-		updateTargetLockIndicator(target, TargetLockIndicatorColor.PURPLE);
-	}
+        public void showTargetLockAssistIndicator(L1Character target) {
+                updateTargetLockIndicator(target, TargetLockIndicatorColor.PURPLE);
+        }
 
-	private void revertTargetLockIndicatorToIdle() {
-		if (!Config.ENABLE_TARGET_LOCK_ASSIST) {
-			clearTargetLockIndicator();
-			return;
-		}
-		L1Character target = getTargetLockTarget();
-		if (target == null) {
-			clearTargetLockIndicator();
-			return;
-		}
-		updateTargetLockIndicator(target, TargetLockIndicatorColor.TEAL);
-	}
+        private void revertTargetLockIndicatorToIdle() {
+                if (!Config.ENABLE_TARGET_LOCK_ASSIST) {
+                        clearTargetLockIndicator();
+                        return;
+                }
+                L1Character target = getTargetLockTarget();
+                if (target == null) {
+                        clearTargetLockIndicator();
+                        return;
+                }
+                updateTargetLockIndicator(target, TargetLockIndicatorColor.TEAL);
+        }
 
         private synchronized void updateTargetLockIndicator(L1Character target, TargetLockIndicatorColor color) {
                 if (!Config.ENABLE_TARGET_LOCK_ASSIST) {
@@ -4761,13 +4753,11 @@ private enum TargetLockIndicatorColor {
                         clearTargetLock();
                         return;
                 }
-
                 L1Character target = getTargetLockTarget();
                 if (target == null) {
                         clearTargetLock();
                         return;
                 }
-
                 TargetLockIndicatorColor indicatorColor = _targetLockAssistActive ? TargetLockIndicatorColor.PURPLE
                                 : TargetLockIndicatorColor.TEAL;
                 updateTargetLockIndicator(target, indicatorColor);
@@ -4776,12 +4766,10 @@ private enum TargetLockIndicatorColor {
                         stopTargetLockAssist();
                         return;
                 }
-
                 if (target.isDead() || target.getMapId() != getMapId()) {
                         clearTargetLock();
                         return;
                 }
-
                 double distance = getLocation().getLineDistance(target.getLocation());
                 if (distance > 20D) {
                         clearTargetLock();
@@ -4797,7 +4785,6 @@ private enum TargetLockIndicatorColor {
                         stopTargetLockAssist();
                         return;
                 }
-
                 int range = getTargetLockRange();
                 if (!isAttackPosition(target.getX(), target.getY(), range)) {
                         updateTargetLockIndicator(target, TargetLockIndicatorColor.TEAL);
@@ -4806,7 +4793,6 @@ private enum TargetLockIndicatorColor {
                         }
                         return;
                 }
-
                 if (Config.CHECK_ATTACK_INTERVAL) {
                         int result = getAcceleratorChecker().checkInterval(AcceleratorChecker.ACT_TYPE.ATTACK);
                         if (result == AcceleratorChecker.R_LIMITEXCEEDED) {
@@ -4814,7 +4800,6 @@ private enum TargetLockIndicatorColor {
                                 return;
                         }
                 }
-
                 if (hasSkillEffect(ABSOLUTE_BARRIER)) {
                         killSkillEffectTimer(ABSOLUTE_BARRIER);
                         startHpRegeneration();
@@ -4829,39 +4814,39 @@ private enum TargetLockIndicatorColor {
                 target.onAction(this);
         }
 
-        private int getTargetLockRange() {
-                L1ItemInstance weapon = getWeapon();
-                if (weapon != null && weapon.getItem() != null) {
-                        int range = weapon.getItem().getRange();
-                        if (range > 0) {
-                                return range;
-                        }
-                }
-                return 1;
-        }
+private int getTargetLockRange() {
+L1ItemInstance weapon = getWeapon();
+if (weapon != null && weapon.getItem() != null) {
+int range = weapon.getItem().getRange();
+if (range > 0) {
+return range;
+}
+}
+return 1;
+}
 
-        private boolean moveTowardsTarget(L1Character target) {
-                int dir = targetDirection(target.getX(), target.getY());
-                int newX = getX() + TARGET_LOCK_MOVE_X[dir];
-                int newY = getY() + TARGET_LOCK_MOVE_Y[dir];
-                L1Map map = getMap();
-                if (map == null) {
-                        return false;
-                }
-                map.setPassable(getLocation(), true);
-                if (!map.isPassable(newX, newY)) {
-                        map.setPassable(getLocation(), false);
-                        return false;
-                }
-                setHeading(dir);
-                getLocation().set(newX, newY);
-                setRegenState(REGENSTATE_MOVE);
-                S_MoveCharPacket movePacket = new S_MoveCharPacket(this);
-                sendPackets(movePacket);
-                broadcastPacket(movePacket);
-                map.setPassable(getLocation(), false);
-                return true;
-        }
+private boolean moveTowardsTarget(L1Character target) {
+int dir = targetDirection(target.getX(), target.getY());
+int newX = getX() + TARGET_LOCK_MOVE_X[dir];
+int newY = getY() + TARGET_LOCK_MOVE_Y[dir];
+L1Map map = getMap();
+if (map == null) {
+return false;
+}
+map.setPassable(getLocation(), true);
+if (!map.isPassable(newX, newY)) {
+map.setPassable(getLocation(), false);
+return false;
+}
+setHeading(dir);
+getLocation().set(newX, newY);
+setRegenState(REGENSTATE_MOVE);
+S_MoveCharPacket movePacket = new S_MoveCharPacket(this);
+sendPackets(movePacket);
+broadcastPacket(movePacket);
+map.setPassable(getLocation(), false);
+return true;
+}
 
 	public void stopHpRegeneration() {
 		if (_hpRegenActive) {
