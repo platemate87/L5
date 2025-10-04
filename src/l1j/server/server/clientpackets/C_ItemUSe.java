@@ -585,20 +585,24 @@ public class C_ItemUSe extends ClientBasePacket {
 					|| itemId == 49151 || itemId == 49152 || itemId == 49153 || itemId == 49154 || itemId == 49155) {
 				usePolyPotion(pc, itemId);
 				inventory.removeItem(l1iteminstance, 1);
-			} else if (itemId == 40317) {
-				if (l1iteminstance1.getItem().getType2() != 0 && l1iteminstance1.get_durability() > 0) {
-					String msg0;
-					inventory.recoveryDamage(l1iteminstance1);
-					msg0 = l1iteminstance1.getLogName();
-					if (l1iteminstance1.get_durability() == 0) {
-						pc.sendPackets(new S_ServerMessage(464, msg0)); // 'item' is as good as new now.
-					} else {
-						pc.sendPackets(new S_ServerMessage(463, msg0)); // 'item`s' condition got better.
-					}
-				} else {
-					pc.sendPackets(new S_ServerMessage(79)); // Nothing happened.
-				}
-				inventory.removeItem(l1iteminstance, 1);
+                        } else if (itemId == 40317) {
+                                L1ItemInstance target = l1iteminstance1;
+                                if (target == null || target.getItem().getType2() == 0) {
+                                        target = pc.getWeapon();
+                                }
+                                if (target != null && target.getItem().getType2() != 0 && target.get_durability() > 0) {
+                                        String msg0;
+                                        inventory.recoveryDamage(target);
+                                        msg0 = target.getLogName();
+                                        if (target.get_durability() == 0) {
+                                                pc.sendPackets(new S_ServerMessage(464, msg0)); // 'item' is as good as new now.
+                                        } else {
+                                                pc.sendPackets(new S_ServerMessage(463, msg0)); // 'item`s' condition got better.
+                                        }
+                                } else {
+                                        pc.sendPackets(new S_ServerMessage(79)); // Nothing happened.
+                                }
+                                inventory.removeItem(l1iteminstance, 1);
 			} else if (itemId == 40097 || itemId == 40119 || itemId == 140119 || itemId == 140329) {
 				for (L1ItemInstance eachItem : inventory.getItems()) {
 					if (eachItem.getItem().getBless() != 2 && eachItem.getItem().getBless() != 130) {
