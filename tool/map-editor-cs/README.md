@@ -17,7 +17,7 @@ without installing Java.
 
 ## Requirements
 
-- .NET 6 SDK or higher on Windows (download from https://dotnet.microsoft.com/).
+- .NET 8 SDK (LTS) on Windows (download from https://dotnet.microsoft.com/).
 - No Java runtime is required for the C# editor.
 
 ## Running the editor
@@ -54,5 +54,5 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 ```
 
 The published executable appears under
-`bin/Release/net6.0-windows/win-x64/publish/MapEditor.exe`. Copy the `maps`
+`bin/Release/net8.0-windows10.0.19041.0/win-x64/publish/MapEditor.exe`. Copy the `maps`
 folder alongside the executable so the editor can locate the CSV files.
