@@ -4,18 +4,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import l1j.server.server.datatables.MapIdsTableEditor;
-import l1j.server.server.datatables.MapIdsTableEditor.MapMetadata;
-import l1j.server.server.datatables.MapsTable;
 import l1j.server.server.model.Instance.L1PcInstance;
 import l1j.server.server.model.map.edit.MapEditManager;
 import l1j.server.server.model.map.edit.MapEditOperation;
@@ -23,9 +16,7 @@ import l1j.server.server.model.map.edit.MapEditSession;
 import l1j.server.server.model.map.edit.MapEditSession.BrushMode;
 import l1j.server.server.model.map.edit.MapEditSession.TileChangeSummary;
 import l1j.server.server.model.map.edit.MapEditSession.ZoneSetting;
-import l1j.server.server.model.map.L1WorldMap;
 import l1j.server.server.serverpackets.S_SystemMessage;
-import l1j.server.server.utils.MapEditorIOUtils;
 
 public class L1MapEditor implements L1CommandExecutor {
 
@@ -61,12 +52,6 @@ public class L1MapEditor implements L1CommandExecutor {
                         case "start":
                                 handleStart(pc, manager);
                                 break;
-                        case "new":
-                                handleNew(pc, manager, parts);
-                                break;
-                        case "meta":
-                                handleMeta(pc, manager, parts);
-                                break;
                         case "brush":
                                 handleBrush(pc, manager, parts);
                                 break;
@@ -86,11 +71,7 @@ public class L1MapEditor implements L1CommandExecutor {
                                 handlePreview(pc, manager);
                                 break;
                         case "commit":
-                        case "save":
-                                handleSave(pc, manager);
-                                break;
-                        case "revert":
-                                handleRevert(pc, manager, parts);
+                                handleCommit(pc, manager);
                                 break;
                         case "cancel":
                                 handleCancel(pc, manager);
@@ -117,302 +98,6 @@ public class L1MapEditor implements L1CommandExecutor {
                         pc.sendPackets(new S_SystemMessage("Pending edits: " + session.getPendingChangeCount()));
                 }
                 pc.sendPackets(new S_SystemMessage("Brush: " + session.describeBrush()));
-        }
-
-        private void handleNew(L1PcInstance pc, MapEditManager manager, String[] parts) {
-                if (parts.length < 6) {
-                        pc.sendPackets(new S_SystemMessage(
-                                        "Usage: .map new <mapId> <startX> <startY> <width> <height> [name=<text>] [monster=<amount>] [drop=<rate>] [+flag|-flag ...] [tile=<id>]"));
-                        return;
-                }
-                short mapId;
-                int startX;
-                int startY;
-                int width;
-                int height;
-                try {
-                        mapId = Short.parseShort(parts[1]);
-                        startX = Integer.parseInt(parts[2]);
-                        startY = Integer.parseInt(parts[3]);
-                        width = Integer.parseInt(parts[4]);
-                        height = Integer.parseInt(parts[5]);
-                } catch (NumberFormatException ex) {
-                        pc.sendPackets(new S_SystemMessage("Invalid map id or dimensions."));
-                        return;
-                }
-                if (width <= 0 || height <= 0) {
-                        pc.sendPackets(new S_SystemMessage("Width and height must be positive."));
-                        return;
-                }
-
-                MapIdsTableEditor editor = MapIdsTableEditor.getInstance();
-                MapMetadata existing;
-                try {
-                        existing = editor.load(mapId);
-                } catch (RuntimeException ex) {
-                        _log.warn("Unable to check map metadata", ex);
-                        pc.sendPackets(new S_SystemMessage("Failed to query existing map metadata: " + ex.getMessage()));
-                        return;
-                }
-                if (existing != null) {
-                        pc.sendPackets(new S_SystemMessage("Map " + mapId + " already exists. Use .map meta set to update."));
-                        return;
-                }
-
-                int endX = startX + width - 1;
-                int endY = startY + height - 1;
-                Map<String, String> values = parseKeyValueArgs(parts, 6);
-                Map<String, Boolean> flags = parseBooleanFlags(parts, 6);
-
-                MapMetadata metadata = new MapMetadata(mapId);
-                metadata.setLocationName(values.getOrDefault("name", "Map " + mapId));
-                metadata.setStartX(startX);
-                metadata.setEndX(endX);
-                metadata.setStartY(startY);
-                metadata.setEndY(endY);
-
-                String monsterValue = getOption(values, "monster", "monsters", "monster_amount");
-                if (monsterValue != null) {
-                        try {
-                                metadata.setMonsterAmount(Double.parseDouble(monsterValue));
-                        } catch (NumberFormatException ex) {
-                                pc.sendPackets(new S_SystemMessage("Invalid monster amount: " + monsterValue));
-                                return;
-                        }
-                }
-
-                String dropValue = getOption(values, "drop", "drop_rate", "droprate");
-                if (dropValue != null) {
-                        try {
-                                metadata.setDropRate(Double.parseDouble(dropValue));
-                        } catch (NumberFormatException ex) {
-                                pc.sendPackets(new S_SystemMessage("Invalid drop rate: " + dropValue));
-                                return;
-                        }
-                }
-
-                metadata.setUnderwater(getFlag(flags, "underwater", false));
-                metadata.setMarkable(getFlag(flags, "markable", false));
-                metadata.setTeleportable(getFlag(flags, "teleportable", false));
-                metadata.setEscapable(getFlag(flags, "escapable", false));
-                metadata.setUseResurrection(getFlag(flags, "resurrection", false));
-                metadata.setUsePainwand(getFlag(flags, "painwand", false));
-                metadata.setEnabledDeathPenalty(getFlag(flags, "penalty", false));
-                metadata.setTakePets(getFlag(flags, "take_pets", false));
-                metadata.setRecallPets(getFlag(flags, "recall_pets", false));
-                metadata.setUsableItem(getFlag(flags, "usable_item", false));
-                metadata.setUsableSkill(getFlag(flags, "usable_skill", false));
-
-                try {
-                        editor.save(metadata);
-                        MapsTable.getInstance().reload();
-                } catch (RuntimeException ex) {
-                        _log.warn("Unable to save map metadata", ex);
-                        pc.sendPackets(new S_SystemMessage("Failed to write map metadata: " + ex.getMessage()));
-                        return;
-                }
-
-                int defaultTile = 0;
-                String tileValue = values.get("tile");
-                if (tileValue != null) {
-                        try {
-                                defaultTile = Integer.parseInt(tileValue);
-                                if (defaultTile < 0 || defaultTile > 255) {
-                                        pc.sendPackets(new S_SystemMessage("Tile id must be between 0 and 255."));
-                                        return;
-                                }
-                        } catch (NumberFormatException ex) {
-                                pc.sendPackets(new S_SystemMessage("Invalid tile id: " + tileValue));
-                                return;
-                        }
-                }
-
-                try {
-                        MapEditorIOUtils.writeBlankMap(mapId, width, height, defaultTile);
-                } catch (IOException ex) {
-                        _log.error("Failed to create map file", ex);
-                        pc.sendPackets(new S_SystemMessage("Failed to write map file: " + ex.getMessage()));
-                        return;
-                }
-
-                refreshLiveMap(mapId);
-                pc.sendPackets(new S_SystemMessage(
-                                "Created map " + mapId + " with size " + width + "x" + height + ". Metadata saved."));
-                MapEditSession session = manager.getSession(pc);
-                if (session != null && session.getMapId() == mapId) {
-                        manager.cancelSession(pc);
-                        pc.sendPackets(new S_SystemMessage(
-                                        "Existing editing session reset. Use .map start on the new map to edit tiles."));
-                }
-        }
-
-        private void handleMeta(L1PcInstance pc, MapEditManager manager, String[] parts) {
-                if (parts.length < 2) {
-                        pc.sendPackets(new S_SystemMessage("Usage: .map meta set <mapId> [options]"));
-                        return;
-                }
-                String sub = parts[1].toLowerCase(Locale.ENGLISH);
-                switch (sub) {
-                case "set":
-                        handleMetaSet(pc, manager, parts);
-                        break;
-                default:
-                        pc.sendPackets(new S_SystemMessage("Usage: .map meta set <mapId> [options]"));
-                        break;
-                }
-        }
-
-        private void handleMetaSet(L1PcInstance pc, MapEditManager manager, String[] parts) {
-                if (parts.length < 3) {
-                        pc.sendPackets(new S_SystemMessage(
-                                        "Usage: .map meta set <mapId> [name=<text>] [startX=<value>] [startY=<value>] [endX=<value>] [endY=<value>] [width=<value>] [height=<value>] [monster=<amount>] [drop=<rate>] [+flag|-flag ...]"));
-                        return;
-                }
-                int mapId;
-                try {
-                        mapId = Integer.parseInt(parts[2]);
-                } catch (NumberFormatException ex) {
-                        pc.sendPackets(new S_SystemMessage("Invalid map id."));
-                        return;
-                }
-
-                MapIdsTableEditor editor = MapIdsTableEditor.getInstance();
-                MapMetadata metadata;
-                try {
-                        metadata = editor.load(mapId);
-                } catch (RuntimeException ex) {
-                        _log.warn("Unable to load map metadata", ex);
-                        pc.sendPackets(new S_SystemMessage("Failed to load map metadata: " + ex.getMessage()));
-                        return;
-                }
-                if (metadata == null) {
-                        pc.sendPackets(new S_SystemMessage("Map " + mapId + " does not exist. Use .map new to create it."));
-                        return;
-                }
-
-                Map<String, String> values = parseKeyValueArgs(parts, 3);
-                Map<String, Boolean> flags = parseBooleanFlags(parts, 3);
-                boolean changed = false;
-
-                String name = values.get("name");
-                if (name != null && !name.equals(metadata.getLocationName())) {
-                        metadata.setLocationName(name);
-                        changed = true;
-                }
-
-                try {
-                        changed |= updateCoordinate(values, metadata, "startx");
-                        changed |= updateCoordinate(values, metadata, "starty");
-                        changed |= updateCoordinate(values, metadata, "endx");
-                        changed |= updateCoordinate(values, metadata, "endy");
-                } catch (IllegalArgumentException ex) {
-                        pc.sendPackets(new S_SystemMessage(ex.getMessage()));
-                        return;
-                }
-
-                String widthValue = values.get("width");
-                if (widthValue != null) {
-                        try {
-                                int width = Integer.parseInt(widthValue);
-                                if (width <= 0) {
-                                        throw new NumberFormatException();
-                                }
-                                int endX = metadata.getStartX() + width - 1;
-                                if (endX != metadata.getEndX()) {
-                                        metadata.setEndX(endX);
-                                        changed = true;
-                                }
-                        } catch (NumberFormatException ex) {
-                                pc.sendPackets(new S_SystemMessage("Invalid width: " + widthValue));
-                                return;
-                        }
-                }
-
-                String heightValue = values.get("height");
-                if (heightValue != null) {
-                        try {
-                                int height = Integer.parseInt(heightValue);
-                                if (height <= 0) {
-                                        throw new NumberFormatException();
-                                }
-                                int endY = metadata.getStartY() + height - 1;
-                                if (endY != metadata.getEndY()) {
-                                        metadata.setEndY(endY);
-                                        changed = true;
-                                }
-                        } catch (NumberFormatException ex) {
-                                pc.sendPackets(new S_SystemMessage("Invalid height: " + heightValue));
-                                return;
-                        }
-                }
-
-                String monsterValue = getOption(values, "monster", "monsters", "monster_amount");
-                if (monsterValue != null) {
-                        try {
-                                double monsterAmount = Double.parseDouble(monsterValue);
-                                if (monsterAmount != metadata.getMonsterAmount()) {
-                                        metadata.setMonsterAmount(monsterAmount);
-                                        changed = true;
-                                }
-                        } catch (NumberFormatException ex) {
-                                pc.sendPackets(new S_SystemMessage("Invalid monster amount: " + monsterValue));
-                                return;
-                        }
-                }
-
-                String dropValue = getOption(values, "drop", "drop_rate", "droprate");
-                if (dropValue != null) {
-                        try {
-                                double dropRate = Double.parseDouble(dropValue);
-                                if (dropRate != metadata.getDropRate()) {
-                                        metadata.setDropRate(dropRate);
-                                        changed = true;
-                                }
-                        } catch (NumberFormatException ex) {
-                                pc.sendPackets(new S_SystemMessage("Invalid drop rate: " + dropValue));
-                                return;
-                        }
-                }
-
-                changed |= applyFlag(metadata::setUnderwater, metadata.isUnderwater(), flags, "underwater");
-                changed |= applyFlag(metadata::setMarkable, metadata.isMarkable(), flags, "markable");
-                changed |= applyFlag(metadata::setTeleportable, metadata.isTeleportable(), flags, "teleportable");
-                changed |= applyFlag(metadata::setEscapable, metadata.isEscapable(), flags, "escapable");
-                changed |= applyFlag(metadata::setUseResurrection, metadata.isUseResurrection(), flags, "resurrection");
-                changed |= applyFlag(metadata::setUsePainwand, metadata.isUsePainwand(), flags, "painwand");
-                changed |= applyFlag(metadata::setEnabledDeathPenalty, metadata.isEnabledDeathPenalty(), flags, "penalty");
-                changed |= applyFlag(metadata::setTakePets, metadata.isTakePets(), flags, "take_pets");
-                changed |= applyFlag(metadata::setRecallPets, metadata.isRecallPets(), flags, "recall_pets");
-                changed |= applyFlag(metadata::setUsableItem, metadata.isUsableItem(), flags, "usable_item");
-                changed |= applyFlag(metadata::setUsableSkill, metadata.isUsableSkill(), flags, "usable_skill");
-
-                if (!changed) {
-                        pc.sendPackets(new S_SystemMessage("No metadata changes detected."));
-                        return;
-                }
-
-                if (metadata.getEndX() < metadata.getStartX() || metadata.getEndY() < metadata.getStartY()) {
-                        pc.sendPackets(new S_SystemMessage("Invalid coordinates: end must be greater than or equal to start."));
-                        return;
-                }
-
-                try {
-                        editor.save(metadata);
-                        MapsTable.getInstance().reload();
-                } catch (RuntimeException ex) {
-                        _log.warn("Unable to save map metadata", ex);
-                        pc.sendPackets(new S_SystemMessage("Failed to save metadata: " + ex.getMessage()));
-                        return;
-                }
-
-                refreshLiveMap((short) mapId);
-                MapEditSession session = manager.getSession(pc);
-                if (session != null && session.getMapId() == mapId) {
-                        manager.cancelSession(pc);
-                        pc.sendPackets(new S_SystemMessage(
-                                        "Active editing session reset to pick up new metadata. Use .map start to resume."));
-                }
-                pc.sendPackets(new S_SystemMessage("Updated metadata for map " + mapId + "."));
         }
 
         private void handleBrush(L1PcInstance pc, MapEditManager manager, String[] parts) {
@@ -598,60 +283,22 @@ public class L1MapEditor implements L1CommandExecutor {
                 }
         }
 
-        private void handleSave(L1PcInstance pc, MapEditManager manager) {
+        private void handleCommit(L1PcInstance pc, MapEditManager manager) {
                 MapEditSession session = requireSession(pc, manager);
                 if (session == null) {
                         return;
                 }
                 if (!session.hasPendingChanges()) {
-                        pc.sendPackets(new S_SystemMessage("No pending edits to save."));
+                        pc.sendPackets(new S_SystemMessage("No pending edits to commit."));
                         return;
                 }
                 try {
                         int committed = session.commit();
-                        refreshLiveMap(session.getMapId());
-                        pc.sendPackets(new S_SystemMessage("Saved " + committed + " tile(s) to map " + session.getMapId() + "."));
+                        pc.sendPackets(new S_SystemMessage("Committed " + committed + " tile(s) to map " + session.getMapId() + "."));
                 } catch (IOException e) {
-                        _log.error("Failed to save map edits", e);
-                        pc.sendPackets(new S_SystemMessage("Failed to save edits: " + e.getMessage()));
+                        _log.error("Failed to commit map edits", e);
+                        pc.sendPackets(new S_SystemMessage("Failed to commit edits: " + e.getMessage()));
                 }
-        }
-
-        private void handleRevert(L1PcInstance pc, MapEditManager manager, String[] parts) {
-                MapEditSession session = manager.getSession(pc);
-                short mapId;
-                if (parts.length >= 2) {
-                        try {
-                                mapId = Short.parseShort(parts[1]);
-                        } catch (NumberFormatException ex) {
-                                pc.sendPackets(new S_SystemMessage("Invalid map id."));
-                                return;
-                        }
-                } else if (session != null) {
-                        mapId = session.getMapId();
-                } else {
-                        pc.sendPackets(new S_SystemMessage("Specify a map id or start an editing session first."));
-                        return;
-                }
-
-                try {
-                        if (!MapEditorIOUtils.restoreBackup(mapId)) {
-                                pc.sendPackets(new S_SystemMessage("No backup exists for map " + mapId + "."));
-                                return;
-                        }
-                } catch (IOException e) {
-                        _log.error("Failed to restore map backup", e);
-                        pc.sendPackets(new S_SystemMessage("Failed to restore backup: " + e.getMessage()));
-                        return;
-                }
-
-                if (session != null && session.getMapId() == mapId) {
-                        manager.cancelSession(pc);
-                        pc.sendPackets(
-                                        new S_SystemMessage("Editing session reset to match restored map state."));
-                }
-                refreshLiveMap(mapId);
-                pc.sendPackets(new S_SystemMessage("Restored map " + mapId + " from backup."));
         }
 
         private void handleCancel(L1PcInstance pc, MapEditManager manager) {
@@ -675,7 +322,7 @@ public class L1MapEditor implements L1CommandExecutor {
 
         private void sendHelp(L1PcInstance pc) {
                 pc.sendPackets(new S_SystemMessage(
-                                ".map <start|new|meta|brush|mode|apply|undo|redo|preview|save|commit|revert|cancel>"));
+                                ".map <start|brush|mode|apply|undo|redo|preview|commit|cancel>"));
         }
 
         private ZoneSetting parseZone(String value) {
@@ -715,136 +362,5 @@ public class L1MapEditor implements L1CommandExecutor {
                 default:
                         return BrushMode.SINGLE;
                 }
-        }
-
-        private Map<String, String> parseKeyValueArgs(String[] parts, int startIndex) {
-                Map<String, String> values = new HashMap<>();
-                for (int i = startIndex; i < parts.length; i++) {
-                        String token = parts[i];
-                        if (token == null || token.isEmpty()) {
-                                continue;
-                        }
-                        if (token.startsWith("+") || token.startsWith("-")) {
-                                continue;
-                        }
-                        int idx = token.indexOf('=');
-                        if (idx <= 0 || idx >= token.length() - 1) {
-                                continue;
-                        }
-                        String key = token.substring(0, idx).toLowerCase(Locale.ENGLISH);
-                        String value = token.substring(idx + 1);
-                        values.put(key, value);
-                }
-                return values;
-        }
-
-        private Map<String, Boolean> parseBooleanFlags(String[] parts, int startIndex) {
-                Map<String, Boolean> flags = new HashMap<>();
-                for (int i = startIndex; i < parts.length; i++) {
-                        String token = parts[i];
-                        if (token == null || token.length() < 2) {
-                                continue;
-                        }
-                        char prefix = token.charAt(0);
-                        if (prefix != '+' && prefix != '-') {
-                                continue;
-                        }
-                        String flagName = token.substring(1).toLowerCase(Locale.ENGLISH);
-                        if (flagName.isEmpty()) {
-                                continue;
-                        }
-                        flags.put(flagName, prefix == '+');
-                }
-                return flags;
-        }
-
-        private boolean getFlag(Map<String, Boolean> flags, String key, boolean defaultValue) {
-                Boolean value = flags.get(key);
-                return value != null ? value.booleanValue() : defaultValue;
-        }
-
-        private String getOption(Map<String, String> values, String... keys) {
-                for (String key : keys) {
-                        String value = values.get(key);
-                        if (value != null) {
-                                return value;
-                        }
-                }
-                return null;
-        }
-
-        private boolean updateCoordinate(Map<String, String> values, MapMetadata metadata, String key) {
-                String value = values.get(key);
-                if (value == null) {
-                        return false;
-                }
-                try {
-                        int coordinate = Integer.parseInt(value);
-                        switch (key) {
-                        case "startx":
-                                if (coordinate != metadata.getStartX()) {
-                                        metadata.setStartX(coordinate);
-                                        return true;
-                                }
-                                break;
-                        case "endx":
-                                if (coordinate != metadata.getEndX()) {
-                                        metadata.setEndX(coordinate);
-                                        return true;
-                                }
-                                break;
-                        case "starty":
-                                if (coordinate != metadata.getStartY()) {
-                                        metadata.setStartY(coordinate);
-                                        return true;
-                                }
-                                break;
-                        case "endy":
-                                if (coordinate != metadata.getEndY()) {
-                                        metadata.setEndY(coordinate);
-                                        return true;
-                                }
-                                break;
-                        default:
-                                break;
-                        }
-                        return false;
-                } catch (NumberFormatException ex) {
-                        String label;
-                        switch (key) {
-                        case "startx":
-                                label = "startX";
-                                break;
-                        case "endx":
-                                label = "endX";
-                                break;
-                        case "starty":
-                                label = "startY";
-                                break;
-                        case "endy":
-                                label = "endY";
-                                break;
-                        default:
-                                label = key;
-                                break;
-                        }
-                        throw new IllegalArgumentException("Invalid " + label + ": " + value, ex);
-                }
-        }
-
-        private boolean applyFlag(Consumer<Boolean> setter, boolean currentValue, Map<String, Boolean> flags, String key) {
-                Boolean value = flags.get(key);
-                if (value == null) {
-                        return false;
-                }
-                if (value.booleanValue() != currentValue) {
-                        setter.accept(value);
-                        return true;
-                }
-                return false;
-        }
-
-        private void refreshLiveMap(short mapId) {
-                L1WorldMap.getInstance().reloadMap(mapId);
         }
 }
