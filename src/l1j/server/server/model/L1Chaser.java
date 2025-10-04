@@ -115,7 +115,7 @@ public class L1Chaser implements Runnable {
 			npc.receiveDamage(_pc, (int) damage);
 		}
 		if (_pc.getDmgMessages() && _cha instanceof L1NpcInstance) {
-			_pc.sendPackets(new S_SystemMessage("Chaser Dealt:" + String.valueOf((int) damage)));
+			_pc.sendPackets(new S_SystemMessage("Chaser Dealt:" + String.valueOf((int) damage) + " (Chaser)"));
 		}
 	}
 

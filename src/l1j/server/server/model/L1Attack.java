@@ -1467,7 +1467,7 @@ public class L1Attack {
 		} else if (_calcType == NPC_PC) {
 			_npc.receiveDamage(_targetPc, damage);
 			if (_targetPc.getDmgMessages()) {
-				_targetPc.sendPackets(new S_SystemMessage("CB Dealt:" + String.valueOf(damage)));
+				_targetPc.sendPackets(new S_SystemMessage("CB Dealt:" + String.valueOf(damage) + " (Counter Barrier)"));
 			}
 		}
 	}
