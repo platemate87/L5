@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="map-editor" default="run" basedir=".">
+    <description>Build script for the Swing-based L1J map editor.</description>
+
+    <property name="src.dir" value="src/main/java" />
+    <property name="build.dir" value="build" />
+    <property name="server.jar" value="../../l1jen.jar" />
+
+    <path id="classpath">
+        <pathelement location="${server.jar}" />
+        <fileset dir="../../lib">
+            <include name="*.jar" />
+        </fileset>
+    </path>
+
+    <target name="clean">
+        <delete dir="${build.dir}" />
+    </target>
+
+    <target name="compile">
+        <mkdir dir="${build.dir}" />
+        <javac srcdir="${src.dir}" destdir="${build.dir}" includeantruntime="false" encoding="UTF-8">
+            <classpath refid="classpath" />
+        </javac>
+    </target>
+
+    <target name="run" depends="compile">
+        <java classname="tool.mapeditor.MapEditorApp" fork="true">
+            <classpath>
+                <pathelement path="${build.dir}" />
+                <pathelement location="${server.jar}" />
+                <fileset dir="../../lib">
+                    <include name="*.jar" />
+                </fileset>
+            </classpath>
+        </java>
+    </target>
+</project>
