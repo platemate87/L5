@@ -4680,7 +4680,7 @@ private enum TargetLockIndicatorColor {
 		updateTargetLockIndicator(target, TargetLockIndicatorColor.TEAL);
 	}
 
-        private void updateTargetLockIndicator(L1Character target, TargetLockIndicatorColor color) {
+        private synchronized void updateTargetLockIndicator(L1Character target, TargetLockIndicatorColor color) {
                 if (!Config.ENABLE_TARGET_LOCK_ASSIST) {
                         return;
                 }
@@ -4699,8 +4699,13 @@ private enum TargetLockIndicatorColor {
                 boolean needsRefresh = (now - _targetLockIndicatorLastBroadcastMillis) >= TARGET_LOCK_INDICATOR_REFRESH_INTERVAL_MS;
 
                 if (targetChanged && _targetLockIndicatorTargetId != 0) {
-                        sendTargetLockIndicatorPacket(_targetLockIndicatorX, _targetLockIndicatorY,
-                                        TARGET_LOCK_INDICATOR_CLEAR_GFX, _targetLockIndicatorMapId);
+                        L1Character previousTarget = null;
+                        L1Object previousTargetObject = L1World.getInstance().findObject(_targetLockIndicatorTargetId);
+                        if (previousTargetObject instanceof L1Character) {
+                                previousTarget = (L1Character) previousTargetObject;
+                        }
+                        sendTargetLockIndicatorPacket(previousTarget, _targetLockIndicatorX, _targetLockIndicatorY,
+                                        TARGET_LOCK_INDICATOR_CLEAR_GFX);
                         _targetLockIndicatorLastBroadcastMillis = 0L;
                         needsRefresh = true;
                 }
@@ -4711,7 +4716,7 @@ private enum TargetLockIndicatorColor {
 
                 int gfxId = color == TargetLockIndicatorColor.PURPLE ? TARGET_LOCK_INDICATOR_PURPLE_GFX
                                 : TARGET_LOCK_INDICATOR_TEAL_GFX;
-                sendTargetLockIndicatorPacket(targetX, targetY, gfxId, target.getMapId());
+                sendTargetLockIndicatorPacket(target, targetX, targetY, gfxId);
 
                 _targetLockIndicatorTargetId = targetId;
                 _targetLockIndicatorX = targetX;
@@ -4721,14 +4726,19 @@ private enum TargetLockIndicatorColor {
                 _targetLockIndicatorLastBroadcastMillis = now;
         }
 
-        private void clearTargetLockIndicator() {
+        private synchronized void clearTargetLockIndicator() {
                 if (_targetLockIndicatorTargetId == 0 && _targetLockIndicatorColor == TargetLockIndicatorColor.NONE) {
                         return;
                 }
+                L1Character previousTarget = null;
                 if (_targetLockIndicatorTargetId != 0) {
-                        sendTargetLockIndicatorPacket(_targetLockIndicatorX, _targetLockIndicatorY,
-                                        TARGET_LOCK_INDICATOR_CLEAR_GFX, _targetLockIndicatorMapId);
+                        L1Object previousTargetObject = L1World.getInstance().findObject(_targetLockIndicatorTargetId);
+                        if (previousTargetObject instanceof L1Character) {
+                                previousTarget = (L1Character) previousTargetObject;
+                        }
                 }
+                sendTargetLockIndicatorPacket(previousTarget, _targetLockIndicatorX, _targetLockIndicatorY,
+                                TARGET_LOCK_INDICATOR_CLEAR_GFX);
                 _targetLockIndicatorTargetId = 0;
                 _targetLockIndicatorColor = TargetLockIndicatorColor.NONE;
                 _targetLockIndicatorX = 0;
@@ -4737,14 +4747,14 @@ private enum TargetLockIndicatorColor {
                 _targetLockIndicatorLastBroadcastMillis = 0L;
         }
 
-	private void sendTargetLockIndicatorPacket(int x, int y, int gfxId, int mapId) {
-		if (gfxId == TARGET_LOCK_INDICATOR_CLEAR_GFX && mapId != 0 && mapId != getMapId()) {
-			return;
-		}
-		S_EffectLocation packet = new S_EffectLocation(x, y, gfxId);
-		sendPackets(packet);
-		broadcastPacket(packet);
-	}
+        private void sendTargetLockIndicatorPacket(L1Character broadcastTarget, int x, int y, int gfxId) {
+                S_EffectLocation packet = new S_EffectLocation(x, y, gfxId);
+                sendPackets(packet);
+                broadcastPacket(packet);
+                if (broadcastTarget != null && broadcastTarget != this) {
+                        broadcastTarget.broadcastPacket(packet);
+                }
+        }
 
         public void onTargetLockMonitorTick() {
                 if (!Config.ENABLE_TARGET_LOCK_ASSIST) {
