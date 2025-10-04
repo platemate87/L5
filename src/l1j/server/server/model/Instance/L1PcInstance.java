@@ -4608,7 +4608,7 @@ public class L1PcInstance extends L1Character {
 		for (Object pet : petList) {
 			petCost += ((L1NpcInstance) pet).getPetcost();
 		}
-		int charisma = getCha();
+		int charisma = getChaForPetControl();
 		if (isCrown()) {
 			charisma += 6;
 		} else if (isKnight()) {
