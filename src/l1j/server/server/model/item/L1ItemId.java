@@ -105,6 +105,7 @@ public class L1ItemId {
 	public static final int SWORD_OF_VARLOK = 203;
 	public static final int LONGBOW_OF_MOON = 205;
 	public static final int SWORD_OF_DEATH_KNIGHT = 58;
+	public static final int ARCANE_STORMBLADE = 450100;
 	public static final int STEEL_STAFF_OF_MANA = 127;
 	public static final int STAFF_OF_MANA = 126;
 	public static final int DAGGER_OF_MAGIC_POWER = 259;
