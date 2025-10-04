@@ -73,11 +73,11 @@ public final class MapsTable {
 	 * Teleport whether the flag map reading from the database, HashMap _maps
 	 * stored.
 	 */
-	private void loadMapsFromDatabase() {
-		Connection con = null;
-		PreparedStatement pstm = null;
-		ResultSet rs = null;
-		try {
+        private void loadMapsFromDatabase() {
+                Connection con = null;
+                PreparedStatement pstm = null;
+                ResultSet rs = null;
+                try {
 			con = L1DatabaseFactory.getInstance().getConnection();
 			pstm = con.prepareStatement("SELECT * FROM mapids");
 			for (rs = pstm.executeQuery(); rs.next();) {
@@ -110,8 +110,50 @@ public final class MapsTable {
 			SQLUtil.close(rs);
 			SQLUtil.close(pstm);
 			SQLUtil.close(con);
-		}
-	}
+                }
+        }
+
+        public synchronized void reload(int mapId) {
+                Connection con = null;
+                PreparedStatement pstm = null;
+                ResultSet rs = null;
+                try {
+                        con = L1DatabaseFactory.getInstance().getConnection();
+                        pstm = con.prepareStatement("SELECT * FROM mapids WHERE mapid = ?");
+                        pstm.setInt(1, mapId);
+                        rs = pstm.executeQuery();
+                        if (rs.next()) {
+                                MapData data = new MapData();
+                                data.locationname = rs.getString("locationname");
+                                data.startX = rs.getInt("startX");
+                                data.endX = rs.getInt("endX");
+                                data.startY = rs.getInt("startY");
+                                data.endY = rs.getInt("endY");
+                                data.monster_amount = rs.getDouble("monster_amount");
+                                data.dropRate = rs.getDouble("drop_rate");
+                                data.isUnderwater = rs.getBoolean("underwater");
+                                data.markable = rs.getBoolean("markable");
+                                data.teleportable = rs.getBoolean("teleportable");
+                                data.escapable = rs.getBoolean("escapable");
+                                data.isUseResurrection = rs.getBoolean("resurrection");
+                                data.isUsePainwand = rs.getBoolean("painwand");
+                                data.isEnabledDeathPenalty = rs.getBoolean("penalty");
+                                data.isTakePets = rs.getBoolean("take_pets");
+                                data.isRecallPets = rs.getBoolean("recall_pets");
+                                data.isUsableItem = rs.getBoolean("usable_item");
+                                data.isUsableSkill = rs.getBoolean("usable_skill");
+                                _maps.put(mapId, data);
+                        } else {
+                                _maps.remove(mapId);
+                        }
+                } catch (SQLException e) {
+                        _log.error(e.getLocalizedMessage(), e);
+                } finally {
+                        SQLUtil.close(rs);
+                        SQLUtil.close(pstm);
+                        SQLUtil.close(con);
+                }
+        }
 
 	/**
 	 * MapsTable Instances of return.
