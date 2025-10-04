@@ -18,6 +18,8 @@ without installing Java.
 ## Requirements
 
 - .NET 8 SDK (LTS) on Windows (download from https://dotnet.microsoft.com/).
+- Windows Desktop workload (e.g., `dotnet workload install windows`) **or** Windows 10 SDK 19041+
+  installed alongside the .NET 8 SDK to provide WinForms dependencies.
 - No Java runtime is required for the C# editor.
 
 ## Running the editor
@@ -29,6 +31,10 @@ From the repository root:
 cd tool/map-editor-cs/MapEditor
 dotnet run
 ```
+
+> **Note:** Ensure the Windows Desktop workload or Windows 10 SDK is installed before running
+> `dotnet run`, especially on clean machines or environments without Visual Studio. You can
+> verify the workload is available with `dotnet workload list`.
 
 The client automatically locates the repository's `maps` directory by walking up
 from the executable folder. When prompted, type the
