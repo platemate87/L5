@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using tool.mapeditor.model;
 
@@ -29,6 +30,10 @@ public class MapCanvasControl : Control
 
     public ToolMode Tool { get; set; } = ToolMode.Brush;
 
+    public bool ShowTileImages { get; set; }
+
+    public TileImageProvider? TileImages { get; set; }
+
     public event EventHandler<Point>? TileHovered;
     public event EventHandler<TileDrawEventArgs>? TilePaintRequested;
     public event EventHandler<Rectangle>? SelectionFinished;
@@ -49,13 +54,28 @@ public class MapCanvasControl : Control
             return;
         }
 
+        if (ShowTileImages && TileImages != null)
+        {
+            e.Graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
+            e.Graphics.PixelOffsetMode = PixelOffsetMode.Half;
+        }
+
         for (var y = 0; y < Map.Height; y++)
         {
             for (var x = 0; x < Map.Width; x++)
             {
                 var rect = new Rectangle(x * TileSize, y * TileSize, TileSize, TileSize);
-                using var brush = new SolidBrush(TileColor(Map.GetOriginalTile(x, y)));
-                e.Graphics.FillRectangle(brush, rect);
+                var tileId = Map.GetOriginalTile(x, y);
+                var tileImage = ShowTileImages ? TileImages?.GetTile(tileId) : null;
+                if (tileImage != null)
+                {
+                    e.Graphics.DrawImage(tileImage, rect);
+                }
+                else
+                {
+                    using var brush = new SolidBrush(TileColor(tileId));
+                    e.Graphics.FillRectangle(brush, rect);
+                }
 
                 if (Overlay == OverlayMode.Passability)
                 {

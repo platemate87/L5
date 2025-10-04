@@ -12,12 +12,15 @@ without installing Java.
 - Brush and rectangle paint tools that call into `EditableL1Map.SetOriginalTile`.
 - Passability three-state toggle (`SetPassable`) and zone selector (`SetZone`).
 - Overlays to visualize passability and zone coverage.
+- Toggle to swap the canvas/palette between hashed colors and real tile art.
 - Undo/redo stack, coordinate readout, and minimap preview.
 - Batch export back to CSV via the built-in `EditableL1Map.ToCsv()` bridge.
 
 ## Requirements
 
-- .NET 8 SDK (LTS) on Windows (download from https://dotnet.microsoft.com/).
+- .NET 8 SDK on Windows (download from https://dotnet.microsoft.com/).
+- Windows Desktop workload (e.g., `dotnet workload install windows`) **or** Windows 10 SDK 19041+
+  installed alongside the .NET 8 SDK to provide WinForms dependencies.
 - No Java runtime is required for the C# editor.
 
 ## Running the editor
@@ -29,6 +32,10 @@ From the repository root:
 cd tool/map-editor-cs/MapEditor
 dotnet run
 ```
+
+> **Note:** Ensure the Windows Desktop workload or Windows 10 SDK is installed before running
+> `dotnet run`, especially on clean machines or environments without Visual Studio. You can
+> verify the workload is available with `dotnet workload list`.
 
 The client automatically locates the repository's `maps` directory by walking up
 from the executable folder. When prompted, type the
@@ -43,6 +50,21 @@ Ctrl+Y) track every paint operation.
 The minimap panel continuously updates to give a whole-map preview. Use the
 `File > Save` action to update `maps/<mapId>.txt` in place or `File > Batch
 Export...` to write every loaded map to a different folder.
+
+## Tile art preview
+
+By default the editor renders each tile with a deterministic color hash. Drop
+actual tile textures into a `tiles` directory to enable the toolbar's **Tile Art**
+toggle and see the map exactly as it appears in game. The editor looks for the
+`tiles` folder next to the executable (such as `tool/map-editor-cs/MapEditor/bin/...`)
+and walks up to the repository root, so placing a `tiles` folder alongside
+`maps` is the easiest approach.
+
+Tile images can be PNG, BMP, or JPG files. The filename must contain the tile
+ID (the digits are parsed out), so both `tiles/000.png` and
+`tiles/tile_85.png` work. When present, the same art also shows up in the
+palette. If no textures are found the toggle stays disabled and the editor
+falls back to hashed colors.
 
 ## Publishing a standalone build
 

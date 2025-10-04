@@ -28,9 +28,11 @@ public class MapEditorForm : Form
     private readonly CheckBox _passableCheck = new() { Text = "Passable (3-state)", ThreeState = true, Dock = DockStyle.Top };
     private readonly ComboBox _zoneCombo = new() { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly ComboBox _overlayCombo = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 140 };
+    private readonly ToolStripButton _tileArtToggle = new() { Text = "Tile Art", DisplayStyle = ToolStripItemDisplayStyle.Text, CheckOnClick = true };
 
     private EditableL1Map? _currentMap;
     private readonly string _mapsDirectory = ResolveMapsDirectory();
+    private readonly TileImageProvider _tileImages;
     private short _selectedTile;
     private bool _snapshotCaptured;
 
@@ -41,8 +43,16 @@ public class MapEditorForm : Form
         Height = 800;
 
         _loader = new CsvMapLoader(_mapsDirectory);
+        _tileImages = new TileImageProvider(ResolveTileImageDirectory());
+        UpdateTileArtAvailability();
+
         InitializeLayout();
         WireEvents();
+        _canvas.TileImages = _tileImages;
+        _palette.TileImages = _tileImages;
+        UpdateTileArtVisibility();
+
+        FormClosed += (_, _) => _tileImages.Dispose();
     }
 
     private void InitializeLayout()
@@ -74,6 +84,8 @@ public class MapEditorForm : Form
         _toolStrip.Items.Add(new ToolStripSeparator());
         _toolStrip.Items.Add(new ToolStripLabel("Overlay:"));
         _toolStrip.Items.Add(overlayHost);
+        _toolStrip.Items.Add(new ToolStripSeparator());
+        _toolStrip.Items.Add(_tileArtToggle);
         _toolStrip.Dock = DockStyle.Top;
         Controls.Add(_toolStrip);
 
@@ -181,6 +193,7 @@ public class MapEditorForm : Form
         _canvas.MouseUp += (_, _) => _snapshotCaptured = false;
         _brushRadio.CheckedChanged += (_, _) => UpdateToolMode();
         _rectangleRadio.CheckedChanged += (_, _) => UpdateToolMode();
+        _tileArtToggle.CheckedChanged += (_, _) => UpdateTileArtVisibility();
         KeyPreview = true;
         KeyDown += OnKeyDown;
     }
@@ -254,7 +267,9 @@ public class MapEditorForm : Form
         _mapLabel.Text = $"Map {map.MapId} ({map.Width}x{map.Height})";
         _selectedTile = _palette.SelectedTile;
         _snapshotCaptured = false;
+        UpdateTileArtVisibility();
     }
+
 
     private IEnumerable<short> AllTiles(EditableL1Map map)
     {
@@ -340,6 +355,10 @@ public class MapEditorForm : Form
 
         _canvas.Invalidate();
         _minimap.Invalidate();
+        if (_palette.ShowTileImages)
+        {
+            _palette.Invalidate();
+        }
     }
 
     private void SaveCurrentMap()
@@ -470,6 +489,30 @@ public class MapEditorForm : Form
         }
     }
 
+    private void UpdateTileArtVisibility()
+    {
+        var show = _tileArtToggle.Checked && _tileImages.HasAnyTiles;
+        _canvas.ShowTileImages = show;
+        _palette.ShowTileImages = show;
+        _canvas.Invalidate();
+        _palette.Invalidate();
+    }
+
+    private void UpdateTileArtAvailability()
+    {
+        if (_tileImages.HasAnyTiles)
+        {
+            _tileArtToggle.Enabled = true;
+            _tileArtToggle.ToolTipText = "Toggle tile art rendering (requires extracted tile images)";
+        }
+        else
+        {
+            _tileArtToggle.Enabled = false;
+            _tileArtToggle.Checked = false;
+            _tileArtToggle.ToolTipText = $"Place tile art images in {_tileImages.BaseDirectory} to enable";
+        }
+    }
+
     private static string ResolveMapsDirectory()
     {
         var current = AppContext.BaseDirectory;
@@ -490,5 +533,27 @@ public class MapEditorForm : Form
         }
 
         return Path.Combine(AppContext.BaseDirectory, "maps");
+    }
+
+    private static string ResolveTileImageDirectory()
+    {
+        var current = AppContext.BaseDirectory;
+        for (var i = 0; i < 6; i++)
+        {
+            var candidate = Path.Combine(current, "tiles");
+            if (Directory.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            var parent = Path.GetFullPath(Path.Combine(current, ".."));
+            if (parent == current)
+            {
+                break;
+            }
+            current = parent;
+        }
+
+        return Path.Combine(AppContext.BaseDirectory, "tiles");
     }
 }

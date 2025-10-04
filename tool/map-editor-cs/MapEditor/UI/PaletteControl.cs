@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -11,6 +12,10 @@ public class PaletteControl : ListBox
     private readonly List<short> _tiles = new();
 
     public event EventHandler<short>? TileSelected;
+
+    public bool ShowTileImages { get; set; }
+
+    public TileImageProvider? TileImages { get; set; }
 
     public PaletteControl()
     {
@@ -51,10 +56,25 @@ public class PaletteControl : ListBox
         }
 
         var tile = _tiles[e.Index];
-        var color = MapCanvasControl.TileColor(tile);
-        using var brush = new SolidBrush(color);
         var colorRect = new Rectangle(e.Bounds.Left + 4, e.Bounds.Top + 4, 16, 16);
-        e.Graphics.FillRectangle(brush, colorRect);
+        Image? tileImage = null;
+        if (ShowTileImages && TileImages != null)
+        {
+            tileImage = TileImages.GetTile(tile);
+        }
+
+        if (tileImage != null)
+        {
+            e.Graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
+            e.Graphics.PixelOffsetMode = PixelOffsetMode.Half;
+            e.Graphics.DrawImage(tileImage, colorRect);
+        }
+        else
+        {
+            using var brush = new SolidBrush(MapCanvasControl.TileColor(tile));
+            e.Graphics.FillRectangle(brush, colorRect);
+        }
+
         e.Graphics.DrawRectangle(Pens.Black, colorRect);
         using var textBrush = new SolidBrush(e.ForeColor);
         e.Graphics.DrawString($"{tile}", e.Font!, textBrush, e.Bounds.Left + 28, e.Bounds.Top + 4);
