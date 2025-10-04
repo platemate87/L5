@@ -268,7 +268,7 @@ public class MapEditorForm : Form
         _selectedTile = _palette.SelectedTile;
         _snapshotCaptured = false;
         UpdateTileArtVisibility();
-    }
+    
 
 
     private IEnumerable<short> AllTiles(EditableL1Map map)
