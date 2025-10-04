@@ -270,6 +270,7 @@ public class MapEditorForm : Form
         UpdateTileArtVisibility();
     
 
+
     private IEnumerable<short> AllTiles(EditableL1Map map)
     {
         for (var y = 0; y < map.Height; y++)
