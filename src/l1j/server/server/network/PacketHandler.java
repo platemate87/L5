@@ -90,8 +90,6 @@ import static l1j.server.server.encryptions.Opcodes.C_OPCODE_RESULT;
 import static l1j.server.server.encryptions.Opcodes.C_OPCODE_RETURNTOLOGIN;
 import static l1j.server.server.encryptions.Opcodes.C_OPCODE_SELECTLIST;
 import static l1j.server.server.encryptions.Opcodes.C_OPCODE_SELECTTARGET;
-import static l1j.server.server.encryptions.Opcodes.C_OPCODE_TARGETLOCK;
-import static l1j.server.server.encryptions.Opcodes.C_OPCODE_TARGETLOCKATTACK;
 import static l1j.server.server.encryptions.Opcodes.C_OPCODE_SENDLOCATION;
 import static l1j.server.server.encryptions.Opcodes.C_OPCODE_SHIP;
 import static l1j.server.server.encryptions.Opcodes.C_OPCODE_SHOP;
@@ -183,8 +181,6 @@ import l1j.server.server.clientpackets.C_Result;
 import l1j.server.server.clientpackets.C_ReturnToLogin;
 import l1j.server.server.clientpackets.C_SelectList;
 import l1j.server.server.clientpackets.C_SelectTarget;
-import l1j.server.server.clientpackets.C_TargetLock;
-import l1j.server.server.clientpackets.C_TargetLockAttack;
 import l1j.server.server.clientpackets.C_SendLocation;
 import l1j.server.server.clientpackets.C_ServerVersion;
 import l1j.server.server.clientpackets.C_Ship;
@@ -474,19 +470,13 @@ public class PacketHandler {
 		case C_OPCODE_HIRESOLDIER:
 			new C_HireSoldier(abyte0, _client);
 			break;
-                case C_OPCODE_FISHCLICK:
-                        new C_FishClick(abyte0, _client);
-                        break;
-                case C_OPCODE_SELECTTARGET:
-                        new C_SelectTarget(abyte0, _client);
-                        break;
-                case C_OPCODE_TARGETLOCK:
-                        new C_TargetLock(abyte0, _client);
-                        break;
-                case C_OPCODE_TARGETLOCKATTACK:
-                        new C_TargetLockAttack(abyte0, _client);
-                        break;
-                case C_OPCODE_PETMENU:
+		case C_OPCODE_FISHCLICK:
+			new C_FishClick(abyte0, _client);
+			break;
+		case C_OPCODE_SELECTTARGET:
+			new C_SelectTarget(abyte0, _client);
+			break;
+		case C_OPCODE_PETMENU:
 			new C_PetMenu(abyte0, _client);
 			break;
 		case C_OPCODE_USEPETITEM:
