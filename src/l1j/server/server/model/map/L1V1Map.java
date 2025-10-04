@@ -98,57 +98,25 @@ public class L1V1Map extends L1Map {
 		_isUsableSkill = usableSkill;
 	}
 
-        public L1V1Map(L1V1Map map) {
-                _mapId = map._mapId;
+	public L1V1Map(L1V1Map map) {
+		_mapId = map._mapId;
 
-                _map = new byte[map._map.length][];
-                for (int i = 0; i < map._map.length; i++) {
-                        _map[i] = map._map[i].clone();
-                }
+		_map = new byte[map._map.length][];
+		for (int i = 0; i < map._map.length; i++) {
+			_map[i] = map._map[i].clone();
+		}
 
-                _worldTopLeftX = map._worldTopLeftX;
-                _worldTopLeftY = map._worldTopLeftY;
-                _worldBottomRightX = map._worldBottomRightX;
-                _worldBottomRightY = map._worldBottomRightY;
+		_worldTopLeftX = map._worldTopLeftX;
+		_worldTopLeftY = map._worldTopLeftY;
+		_worldBottomRightX = map._worldBottomRightX;
+		_worldBottomRightY = map._worldBottomRightY;
 
-        }
+	}
 
-        public void applyFrom(L1V1Map source) {
-                if (source == null) {
-                        throw new IllegalArgumentException("source");
-                }
-
-                byte[][] newTiles = new byte[source._map.length][];
-                for (int i = 0; i < source._map.length; i++) {
-                        byte[] row = source._map[i];
-                        newTiles[i] = row != null ? row.clone() : null;
-                }
-
-                _map = newTiles;
-
-                _mapId = source._mapId;
-                _worldTopLeftX = source._worldTopLeftX;
-                _worldTopLeftY = source._worldTopLeftY;
-                _worldBottomRightX = source._worldBottomRightX;
-                _worldBottomRightY = source._worldBottomRightY;
-
-                _isUnderwater = source._isUnderwater;
-                _isMarkable = source._isMarkable;
-                _isTeleportable = source._isTeleportable;
-                _isEscapable = source._isEscapable;
-                _isUseResurrection = source._isUseResurrection;
-                _isUsePainwand = source._isUsePainwand;
-                _isEnabledDeathPenalty = source._isEnabledDeathPenalty;
-                _isTakePets = source._isTakePets;
-                _isRecallPets = source._isRecallPets;
-                _isUsableItem = source._isUsableItem;
-                _isUsableSkill = source._isUsableSkill;
-        }
-
-        private int accessTile(int x, int y) {
-                if (!isInMap(x, y)) {
-                        return 0;
-                }
+	private int accessTile(int x, int y) {
+		if (!isInMap(x, y)) {
+			return 0;
+		}
 
 		return _map[x - _worldTopLeftX][y - _worldTopLeftY];
 	}
