@@ -177,13 +177,9 @@ public final class Config {
 	
 	public static boolean ENABLE_AUTO_QUEST_LEVEL30;
 	
-public static boolean ENABLE_AUTO_QUEST_LEVEL50;
+	public static boolean ENABLE_AUTO_QUEST_LEVEL50;
 
-public static boolean ENABLE_TARGET_LOCK_ASSIST;
-
-public static int TARGET_LOCK_ASSIST_INTERVAL;
-
-public static boolean RESTRICT_ACCOUNT_IPS;
+	public static boolean RESTRICT_ACCOUNT_IPS;
 
 	public static String RESTRICT_ACCOUNT_IPS_MESSAGE;
 
@@ -818,13 +814,11 @@ public static boolean RESTRICT_ACCOUNT_IPS;
 			ALT_BOSS_EVENT_DAILY_RESET = Boolean.parseBoolean(altSettings.getProperty("BossEventDailyReset", "False"));
 			ALT_BOSS_EVENT_RESET_TIME = altSettings.getProperty("BossEventDailyResetTime", "00:00");
 			ENABLE_AUTO_QUEST_LEVEL15 = Boolean.parseBoolean(altSettings.getProperty("EnableAutoQuestLevel15", "True"));
-                        ENABLE_AUTO_QUEST_LEVEL30 = Boolean.parseBoolean(altSettings.getProperty("EnableAutoQuestLevel30", "True"));
-                        ENABLE_AUTO_QUEST_LEVEL50 = Boolean.parseBoolean(altSettings.getProperty("EnableAutoQuestLevel50", "True"));
-                        ENABLE_TARGET_LOCK_ASSIST = Boolean.parseBoolean(altSettings.getProperty("TargetLockAssistEnabled", "False"));
-                        TARGET_LOCK_ASSIST_INTERVAL = Integer.parseInt(altSettings.getProperty("TargetLockAssistInterval", "200"));
+			ENABLE_AUTO_QUEST_LEVEL30 = Boolean.parseBoolean(altSettings.getProperty("EnableAutoQuestLevel30", "True"));
+			ENABLE_AUTO_QUEST_LEVEL50 = Boolean.parseBoolean(altSettings.getProperty("EnableAutoQuestLevel50", "True"));
 
-
-ALT_DAYS_LIMIT_PLEDGE_JOIN = TimeUnit.DAYS
+			
+			ALT_DAYS_LIMIT_PLEDGE_JOIN = TimeUnit.DAYS
 					.toMillis(Integer.parseInt(altSettings.getProperty("DaysLimitPledgeJoin", "0")));
 
 			ALT_JPPRIVILEGED = Boolean.parseBoolean(altSettings.getProperty("JpPrivileged", "False"));
@@ -1145,16 +1139,12 @@ ALT_DAYS_LIMIT_PLEDGE_JOIN = TimeUnit.DAYS
 			ALT_GMSHOP_MAX_ID = Integer.parseInt(pValue);
 		} else if (pName.equalsIgnoreCase("HalloweenEvent")) {
 			ALT_HALLOWEENEVENT = Boolean.valueOf(pValue);
-                } else if (pName.equalsIgnoreCase("HalloweenEventNpc")) {
-                        ALT_HALLOWEENEVENTNPC = Boolean.valueOf(pValue);
-                } else if (pName.equalsIgnoreCase("PolyEvent")) {
-                        ALT_POLYEVENT = Boolean.valueOf(pValue);
-                } else if (pName.equalsIgnoreCase("TargetLockAssistEnabled")) {
-                        ENABLE_TARGET_LOCK_ASSIST = Boolean.parseBoolean(pValue);
-                } else if (pName.equalsIgnoreCase("TargetLockAssistInterval")) {
-                        TARGET_LOCK_ASSIST_INTERVAL = Integer.parseInt(pValue);
-                } else if (pName.equalsIgnoreCase("JpPrivileged")) {
-                        ALT_JPPRIVILEGED = Boolean.valueOf(pValue);
+		} else if (pName.equalsIgnoreCase("HalloweenEventNpc")) {
+			ALT_HALLOWEENEVENTNPC = Boolean.valueOf(pValue);
+		} else if (pName.equalsIgnoreCase("PolyEvent")) {
+			ALT_POLYEVENT = Boolean.valueOf(pValue);
+		} else if (pName.equalsIgnoreCase("JpPrivileged")) {
+			ALT_JPPRIVILEGED = Boolean.valueOf(pValue);
 		} else if (pName.equalsIgnoreCase("TalkingScrollQuest")) {
 			ALT_TALKINGSCROLLQUEST = Boolean.valueOf(pValue);
 		} else if (pName.equalsIgnoreCase("HouseTaxInterval")) {

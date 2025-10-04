@@ -94,10 +94,8 @@ public class Opcodes {
 	public static final int C_OPCODE_RESULT = 40;
 	public static final int C_OPCODE_RETURNTOLOGIN = 218;
 	public static final int C_OPCODE_SELECTLIST = 238;
-public static final int C_OPCODE_SELECTTARGET = 155;
-public static final int C_OPCODE_TARGETLOCK = 248;
-public static final int C_OPCODE_TARGETLOCKATTACK = 252;
-public static final int C_OPCODE_SENDLOCATION = 41;
+	public static final int C_OPCODE_SELECTTARGET = 155;
+	public static final int C_OPCODE_SENDLOCATION = 41;
 	public static final int C_OPCODE_SHIP = 117;
 	public static final int C_OPCODE_SHOP = 16;
 	public static final int C_OPCODE_SKILLBUY = 173;
