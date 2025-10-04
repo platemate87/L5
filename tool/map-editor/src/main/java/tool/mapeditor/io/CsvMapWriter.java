@@ -18,7 +18,7 @@ public class CsvMapWriter {
     public void write(EditableL1Map map) throws IOException {
         Path file = mapsDirectory.resolve(map.getId() + ".txt");
         Files.createDirectories(file.getParent());
-        Files.write(file, map.toCsv().getBytes(StandardCharsets.UTF_8));
+        Files.writeString(file, map.toCsv(), StandardCharsets.UTF_8);
     }
 
     public static CsvMapWriter forProjectRoot() {

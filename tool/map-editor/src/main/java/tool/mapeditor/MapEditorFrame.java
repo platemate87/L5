@@ -165,7 +165,7 @@ public class MapEditorFrame extends JFrame {
     private void loadMap(ActionEvent event) {
         String input = JOptionPane.showInputDialog(this, "Enter map ID to load", "Load Map",
                 JOptionPane.QUESTION_MESSAGE);
-        if (input == null || input.trim().isEmpty()) {
+        if (input == null || input.isBlank()) {
             return;
         }
         try {
