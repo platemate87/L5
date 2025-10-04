@@ -894,6 +894,8 @@ public class L1PcInventory extends L1Inventory {
                         return ChaEquipmentSlot.RING;
                 case 10:
                         return ChaEquipmentSlot.BELT;
+                case 11:
+                        return ChaEquipmentSlot.RING;
                 case 12:
                         return ChaEquipmentSlot.EARRING;
                 case 13:
