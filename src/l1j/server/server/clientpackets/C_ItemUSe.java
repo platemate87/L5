@@ -586,8 +586,18 @@ public class C_ItemUSe extends ClientBasePacket {
 				usePolyPotion(pc, itemId);
 				inventory.removeItem(l1iteminstance, 1);
                         } else if (itemId == 40317) {
-                                L1ItemInstance targetWeapon = pc.getWeapon();
-                                if (targetWeapon == null || targetWeapon.get_durability() <= 0) {
+                                L1ItemInstance targetWeapon = null;
+                                if (l1iteminstance1 != null && l1iteminstance1 != l1iteminstance
+                                                && l1iteminstance1.getItem().getType2() == 1 && l1iteminstance1.get_durability() > 0) {
+                                        targetWeapon = l1iteminstance1;
+                                }
+                                if (targetWeapon == null) {
+                                        L1ItemInstance equippedWeapon = pc.getWeapon();
+                                        if (equippedWeapon != null && equippedWeapon.get_durability() > 0) {
+                                                targetWeapon = equippedWeapon;
+                                        }
+                                }
+                                if (targetWeapon == null) {
                                         for (L1ItemInstance eachItem : inventory.getItems()) {
                                                 if (eachItem.getItem().getType2() == 1 && eachItem.get_durability() > 0) {
                                                         targetWeapon = eachItem;
@@ -595,7 +605,7 @@ public class C_ItemUSe extends ClientBasePacket {
                                                 }
                                         }
                                 }
-                                if (targetWeapon != null && targetWeapon.get_durability() > 0) {
+                                if (targetWeapon != null) {
                                         L1ItemInstance repaired = inventory.recoveryDamage(targetWeapon);
                                         if (repaired != null) {
                                                 String msg0 = targetWeapon.getLogName();
