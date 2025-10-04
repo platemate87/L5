@@ -18,6 +18,7 @@
  */
 package l1j.server.server.clientpackets;
 
+import l1j.server.server.model.Instance.L1ItemInstance;
 import l1j.server.server.model.Instance.L1PcInstance;
 import l1j.server.server.network.Client;
 import l1j.server.server.serverpackets.S_FixWeaponList;
@@ -29,11 +30,27 @@ public class C_FixWeaponList extends ClientBasePacket {
 
 	private static final String C_FIX_WEAPON_LIST = "[C] C_FixWeaponList";
 
-	public C_FixWeaponList(byte abyte0[], Client client) {
-		super(abyte0);
-		L1PcInstance pc = client.getActiveChar();
-		pc.sendPackets(new S_FixWeaponList(pc));
-	}
+        public C_FixWeaponList(byte abyte0[], Client client) {
+                super(abyte0);
+                L1PcInstance pc = client.getActiveChar();
+                if (pc == null) {
+                        return;
+                }
+
+                int itemObjId = 0;
+                if (abyte0.length >= 5) {
+                        itemObjId = readD();
+                }
+
+                L1ItemInstance whetstone = pc.getInventory().getItem(itemObjId);
+                if (whetstone != null && whetstone.getItemId() == C_ItemUSe.WHETSTONE_ID) {
+                        if (C_ItemUSe.useWhetstone(pc, whetstone)) {
+                                return;
+                        }
+                }
+
+                pc.sendPackets(new S_FixWeaponList(pc));
+        }
 
 	@Override
 	public String getType() {

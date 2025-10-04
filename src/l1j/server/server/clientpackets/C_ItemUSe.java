@@ -173,6 +173,7 @@ public class C_ItemUSe extends ClientBasePacket {
         private static Logger _log = LoggerFactory.getLogger(C_ItemUSe.class.getName());
 
         private static final int[] TOI_RANDOM_TELEPORT_EXCLUDED_MAPS = { 116, 126, 136, 146, 156, 166, 176, 187, 197 };
+        static final int WHETSTONE_ID = 40317;
 
 	public C_ItemUSe(byte abyte0[], Client client) throws Exception {
 		super(abyte0);
@@ -235,7 +236,7 @@ public class C_ItemUSe extends ClientBasePacket {
 				|| itemId == 40098 || itemId == 40129 || itemId == 40130 || itemId == 140129 || itemId == 140130
 				|| itemId == B_SCROLL_OF_ENCHANT_ARMOR || itemId == B_SCROLL_OF_ENCHANT_WEAPON
 				|| itemId == C_SCROLL_OF_ENCHANT_ARMOR || itemId == C_SCROLL_OF_ENCHANT_WEAPON || itemId == 41029
-				|| itemId == 40317 || itemId == 41036 || itemId == 41245 || itemId == 40127 || itemId == 40128
+				|| itemId == WHETSTONE_ID || itemId == 41036 || itemId == 41245 || itemId == 40127 || itemId == 40128
 				|| itemId == 41048 || itemId == 41049 || itemId == 41050 || itemId == 41051 || itemId == 41052
 				|| itemId == 41053 || itemId == 41054 || itemId == 41055 || itemId == 41056 || itemId == 41057
 				|| itemId == 40925 || itemId == 40926 || itemId == 40927 || itemId == 40928 || itemId == 40929
@@ -585,26 +586,8 @@ public class C_ItemUSe extends ClientBasePacket {
 					|| itemId == 49151 || itemId == 49152 || itemId == 49153 || itemId == 49154 || itemId == 49155) {
 				usePolyPotion(pc, itemId);
 				inventory.removeItem(l1iteminstance, 1);
-                        } else if (itemId == 40317) {
-                                L1ItemInstance weapon = pc.getWeapon();
-                                if (weapon == null) {
-                                        pc.sendPackets(new S_SystemMessage("You must equip a weapon to use the whetstone."));
-                                } else if (weapon.get_durability() <= 0) {
-                                        pc.sendPackets(new S_SystemMessage(weapon.getLogName() + " does not need repair."));
-                                } else {
-                                        L1ItemInstance repaired = inventory.recoveryDamage(weapon);
-                                        if (repaired != null) {
-                                                String msg0 = weapon.getLogName();
-                                                if (weapon.get_durability() == 0) {
-                                                        pc.sendPackets(new S_ServerMessage(464, msg0)); // 'item' is as good as new now.
-                                                } else {
-                                                        pc.sendPackets(new S_ServerMessage(463, msg0)); // 'item`s' condition got better.
-                                                }
-                                                inventory.removeItem(l1iteminstance, 1);
-                                        } else {
-                                                pc.sendPackets(new S_ServerMessage(79)); // Nothing happened.
-                                        }
-                                }
+                       } else if (itemId == WHETSTONE_ID) {
+                               useWhetstone(pc, l1iteminstance);
                         } else if (itemId == 40097 || itemId == 40119 || itemId == 140119 || itemId == 140329) {
 				for (L1ItemInstance eachItem : inventory.getItems()) {
 					if (eachItem.getItem().getBless() != 2 && eachItem.getItem().getBless() != 130) {
@@ -3006,6 +2989,56 @@ public class C_ItemUSe extends ClientBasePacket {
 		pc.sendAndBroadcast(new S_SkillSound(pc.getId(), 750));
 
 		pc.setSkillEffect(STATUS_WISDOM_POTION, time * 1000);
+	}
+
+	static boolean useWhetstone(L1PcInstance pc, L1ItemInstance whetstone) {
+		if (pc == null) {
+			return false;
+		}
+
+		L1PcInventory inventory = pc.getInventory();
+		if (inventory == null) {
+			return false;
+		}
+
+		L1ItemInstance whetstoneItem = whetstone;
+		if (whetstoneItem == null) {
+			whetstoneItem = inventory.findItemId(WHETSTONE_ID);
+			if (whetstoneItem == null) {
+				return false;
+			}
+		}
+
+		L1ItemInstance targetWeapon = pc.getWeapon();
+		if (targetWeapon == null || targetWeapon.get_durability() <= 0) {
+			for (L1ItemInstance eachItem : inventory.getItems()) {
+				if (eachItem.getItem().getType2() == 1 && eachItem.get_durability() > 0) {
+					targetWeapon = eachItem;
+					break;
+				}
+			}
+		}
+
+		if (targetWeapon == null || targetWeapon.get_durability() <= 0) {
+			pc.sendPackets(new S_SystemMessage("No damaged weapons found."));
+			return false;
+		}
+
+		L1ItemInstance repaired = inventory.recoveryDamage(targetWeapon);
+		if (repaired == null) {
+			pc.sendPackets(new S_SystemMessage("No damaged weapons found."));
+			return false;
+		}
+
+		String msg0 = targetWeapon.getLogName();
+		if (targetWeapon.get_durability() == 0) {
+			pc.sendPackets(new S_ServerMessage(464, msg0)); // 'item' is as good as new now.
+		} else {
+			pc.sendPackets(new S_ServerMessage(463, msg0)); // 'item`s' condition got better.
+		}
+
+		inventory.removeItem(whetstoneItem, 1);
+		return true;
 	}
 
 	private void useBlessOfEva(L1PcInstance pc, int item_id) {
