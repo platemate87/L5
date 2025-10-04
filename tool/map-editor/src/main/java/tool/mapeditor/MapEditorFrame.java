@@ -165,15 +165,11 @@ public class MapEditorFrame extends JFrame {
     private void loadMap(ActionEvent event) {
         String input = JOptionPane.showInputDialog(this, "Enter map ID to load", "Load Map",
                 JOptionPane.QUESTION_MESSAGE);
-        if (input == null) {
-            return;
-        }
-        String trimmed = input.trim();
-        if (trimmed.isEmpty()) {
+        if (input == null || input.isBlank()) {
             return;
         }
         try {
-            int mapId = Integer.parseInt(trimmed);
+            int mapId = Integer.parseInt(input.trim());
             EditableL1Map map = loader.load(mapId);
             MapContext context = new MapContext(map);
             contexts.put(mapId, context);
