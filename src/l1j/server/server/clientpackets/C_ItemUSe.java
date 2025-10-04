@@ -235,7 +235,7 @@ public class C_ItemUSe extends ClientBasePacket {
 				|| itemId == 40098 || itemId == 40129 || itemId == 40130 || itemId == 140129 || itemId == 140130
 				|| itemId == B_SCROLL_OF_ENCHANT_ARMOR || itemId == B_SCROLL_OF_ENCHANT_WEAPON
 				|| itemId == C_SCROLL_OF_ENCHANT_ARMOR || itemId == C_SCROLL_OF_ENCHANT_WEAPON || itemId == 41029
-				|| itemId == 40317 || itemId == 41036 || itemId == 41245 || itemId == 40127 || itemId == 40128
+                                || itemId == 41036 || itemId == 41245 || itemId == 40127 || itemId == 40128
 				|| itemId == 41048 || itemId == 41049 || itemId == 41050 || itemId == 41051 || itemId == 41052
 				|| itemId == 41053 || itemId == 41054 || itemId == 41055 || itemId == 41056 || itemId == 41057
 				|| itemId == 40925 || itemId == 40926 || itemId == 40927 || itemId == 40928 || itemId == 40929
@@ -586,8 +586,18 @@ public class C_ItemUSe extends ClientBasePacket {
 				usePolyPotion(pc, itemId);
 				inventory.removeItem(l1iteminstance, 1);
                         } else if (itemId == 40317) {
-                                L1ItemInstance targetWeapon = pc.getWeapon();
-                                if (targetWeapon == null || targetWeapon.get_durability() <= 0) {
+                                L1ItemInstance targetWeapon = null;
+                                if (l1iteminstance1 != null && l1iteminstance1 != l1iteminstance
+                                                && l1iteminstance1.getItem().getType2() == 1 && l1iteminstance1.get_durability() > 0) {
+                                        targetWeapon = l1iteminstance1;
+                                }
+                                if (targetWeapon == null) {
+                                        L1ItemInstance equippedWeapon = pc.getWeapon();
+                                        if (equippedWeapon != null && equippedWeapon.get_durability() > 0) {
+                                                targetWeapon = equippedWeapon;
+                                        }
+                                }
+                                if (targetWeapon == null) {
                                         for (L1ItemInstance eachItem : inventory.getItems()) {
                                                 if (eachItem.getItem().getType2() == 1 && eachItem.get_durability() > 0) {
                                                         targetWeapon = eachItem;
@@ -595,7 +605,7 @@ public class C_ItemUSe extends ClientBasePacket {
                                                 }
                                         }
                                 }
-                                if (targetWeapon != null && targetWeapon.get_durability() > 0) {
+                                if (targetWeapon != null) {
                                         L1ItemInstance repaired = inventory.recoveryDamage(targetWeapon);
                                         if (repaired != null) {
                                                 String msg0 = targetWeapon.getLogName();
