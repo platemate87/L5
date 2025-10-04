@@ -247,7 +247,11 @@ public class ItemTable {
 				item.set_delaytime(rs.getInt("delay_time"));
 				item.set_delayEffect(rs.getInt("delay_effect"));
 				item.setFoodVolume(rs.getInt("food_volume"));
-				item.setToBeSavedAtOnce((rs.getInt("save_at_once") == 1) ? true : false);
+                                item.setToBeSavedAtOnce((rs.getInt("save_at_once") == 1) ? true : false);
+                                if (item.getItemId() == 40317) {
+                                        // Treat whetstones as consumables so the client does not prompt for a target.
+                                        item.setUseType(_useTypes.get("normal").intValue());
+                                }
 				result.put(new Integer(item.getItemId()), item);
 			}
 		} catch (NullPointerException e) {

@@ -235,7 +235,7 @@ public class C_ItemUSe extends ClientBasePacket {
 				|| itemId == 40098 || itemId == 40129 || itemId == 40130 || itemId == 140129 || itemId == 140130
 				|| itemId == B_SCROLL_OF_ENCHANT_ARMOR || itemId == B_SCROLL_OF_ENCHANT_WEAPON
 				|| itemId == C_SCROLL_OF_ENCHANT_ARMOR || itemId == C_SCROLL_OF_ENCHANT_WEAPON || itemId == 41029
-				|| itemId == 40317 || itemId == 41036 || itemId == 41245 || itemId == 40127 || itemId == 40128
+                                || itemId == 41036 || itemId == 41245 || itemId == 40127 || itemId == 40128
 				|| itemId == 41048 || itemId == 41049 || itemId == 41050 || itemId == 41051 || itemId == 41052
 				|| itemId == 41053 || itemId == 41054 || itemId == 41055 || itemId == 41056 || itemId == 41057
 				|| itemId == 40925 || itemId == 40926 || itemId == 40927 || itemId == 40928 || itemId == 40929
