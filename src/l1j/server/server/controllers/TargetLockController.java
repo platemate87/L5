@@ -44,17 +44,15 @@ public class TargetLockController {
 			return;
 		}
 
-		boolean allowNearest = requestedTargetId <= 0 && !pc.hasTargetLock();
-		L1Character target = resolveTarget(pc, requestedTargetId, allowNearest);
-		if (target != null) {
-			pc.setTargetLock(target);
-			pc.showTargetLockSelectionIndicator(target);
-			pc.sendPackets(new S_SystemMessage(String.format("Target locked: %s", target.getName())));
-			return;
-		}
-
-		pc.clearTargetLock();
-		pc.sendPackets(new S_SystemMessage("Target lock cleared."));
+                L1Character target = resolveTarget(pc, requestedTargetId, true);
+                if (target != null) {
+                        pc.setTargetLock(target);
+                        pc.showTargetLockSelectionIndicator(target);
+                        pc.sendPackets(new S_SystemMessage(String.format("Target locked: %s", target.getName())));
+                } else {
+                        pc.clearTargetLock();
+                        pc.sendPackets(new S_SystemMessage("Target lock cleared."));
+                }
 	}
 
 	public void handleAttackRequest(L1PcInstance pc, int requestedTargetId, int clickX, int clickY) {
@@ -67,15 +65,15 @@ public class TargetLockController {
 			boolean allowNearest = requestedTargetId <= 0;
 			target = resolveTarget(pc, requestedTargetId, allowNearest);
 		}
-		if (target == null) {
-			pc.sendPackets(new S_SystemMessage("There is no valid monster to attack."));
-			return;
-		}
+                if (target == null) {
+                        pc.sendPackets(new S_SystemMessage("There is no valid monster to attack."));
+                        return;
+                }
 
-		pc.setTargetLock(target);
-		pc.showTargetLockSelectionIndicator(target);
-		pc.startTargetLockAssist();
-	}
+                pc.setTargetLock(target);
+                pc.showTargetLockSelectionIndicator(target);
+                pc.startTargetLockAssist();
+        }
 
 	private L1Character resolveTarget(L1PcInstance pc, int requestedTargetId, boolean allowNearest) {
 		L1Character target = null;
