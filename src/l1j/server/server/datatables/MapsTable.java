@@ -73,10 +73,11 @@ public final class MapsTable {
 	 * Teleport whether the flag map reading from the database, HashMap _maps
 	 * stored.
 	 */
-	private void loadMapsFromDatabase() {
-		Connection con = null;
-		PreparedStatement pstm = null;
-		ResultSet rs = null;
+        private synchronized void loadMapsFromDatabase() {
+                _maps.clear();
+                Connection con = null;
+                PreparedStatement pstm = null;
+                ResultSet rs = null;
 		try {
 			con = L1DatabaseFactory.getInstance().getConnection();
 			pstm = con.prepareStatement("SELECT * FROM mapids");
@@ -110,8 +111,12 @@ public final class MapsTable {
 			SQLUtil.close(rs);
 			SQLUtil.close(pstm);
 			SQLUtil.close(con);
-		}
-	}
+                }
+        }
+
+        public synchronized void reload() {
+                loadMapsFromDatabase();
+        }
 
 	/**
 	 * MapsTable Instances of return.
