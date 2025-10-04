@@ -43,6 +43,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -765,15 +766,15 @@ public class L1PcInventory extends L1Inventory {
                 }
 
                 Map<ChaEquipmentSlot, List<Integer>> bonusesBySlot = new EnumMap<>(ChaEquipmentSlot.class);
+                Map<ChaEquipmentSlot, Integer> equippedChaBySlot = new EnumMap<>(ChaEquipmentSlot.class);
+
                 for (L1ItemInstance item : _items) {
-                        if (item.isEquipped() || item.isSealed()) {
-                                continue;
-                        }
                         L1Item template = item.getItem();
-                        if (template == null || template.get_addcha() <= 0) {
+                        if (template == null) {
                                 continue;
                         }
-                        if (!canOwnerEquip(template)) {
+
+                        if (item.isSealed() && !item.isEquipped()) {
                                 continue;
                         }
 
@@ -782,19 +783,49 @@ public class L1PcInventory extends L1Inventory {
                                 continue;
                         }
 
-                        bonusesBySlot.computeIfAbsent(slot, key -> new ArrayList<>()).add((int) template.get_addcha());
+                        int cha = template.get_addcha();
+
+                        if (item.isEquipped()) {
+                                equippedChaBySlot.merge(slot, cha, Integer::sum);
+                        } else if (!canOwnerEquip(template)) {
+                                continue;
+                        }
+
+                        bonusesBySlot.computeIfAbsent(slot, key -> new ArrayList<>()).add(cha);
+                }
+
+                if (bonusesBySlot.isEmpty() && equippedChaBySlot.isEmpty()) {
+                        return 0;
                 }
 
                 int bonus = 0;
-                for (Map.Entry<ChaEquipmentSlot, List<Integer>> entry : bonusesBySlot.entrySet()) {
-                        List<Integer> values = entry.getValue();
-                        if (values.isEmpty()) {
-                                continue;
+                EnumSet<ChaEquipmentSlot> slots = EnumSet.noneOf(ChaEquipmentSlot.class);
+                slots.addAll(bonusesBySlot.keySet());
+                slots.addAll(equippedChaBySlot.keySet());
+
+                for (ChaEquipmentSlot slot : slots) {
+                        List<Integer> values = bonusesBySlot.get(slot);
+                        if (values == null || values.isEmpty()) {
+                                values = Collections.emptyList();
+                        } else {
+                                Collections.sort(values, Collections.reverseOrder());
                         }
-                        Collections.sort(values, Collections.reverseOrder());
-                        int limit = entry.getKey().getCapacity(this);
-                        for (int i = 0; i < values.size() && i < limit; i++) {
-                                bonus += values.get(i);
+
+                        int capacity = slot.getCapacity(this);
+                        int bestSum = 0;
+                        int limit = Math.min(capacity, values.size());
+                        for (int i = 0; i < limit; i++) {
+                                int value = values.get(i);
+                                if (value <= 0) {
+                                        break;
+                                }
+                                bestSum += value;
+                        }
+
+                        int equippedSum = equippedChaBySlot.getOrDefault(slot, 0);
+                        int delta = bestSum - equippedSum;
+                        if (delta > 0) {
+                                bonus += delta;
                         }
                 }
                 return bonus;
