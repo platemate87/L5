@@ -113,6 +113,39 @@ public class L1V1Map extends L1Map {
 
 	}
 
+	public void applyFrom(L1V1Map source) {
+		if (source == null) {
+			throw new NullPointerException("source");
+		}
+		if (_mapId != 0 && _mapId != source._mapId) {
+			throw new IllegalArgumentException("Cannot apply mapId " + source._mapId + " to map " + _mapId);
+		}
+
+		_mapId = source._mapId;
+
+		_map = new byte[source._map.length][];
+		for (int i = 0; i < source._map.length; i++) {
+			_map[i] = source._map[i].clone();
+		}
+
+		_worldTopLeftX = source._worldTopLeftX;
+		_worldTopLeftY = source._worldTopLeftY;
+		_worldBottomRightX = source._worldBottomRightX;
+		_worldBottomRightY = source._worldBottomRightY;
+
+		_isUnderwater = source._isUnderwater;
+		_isMarkable = source._isMarkable;
+		_isTeleportable = source._isTeleportable;
+		_isEscapable = source._isEscapable;
+		_isUseResurrection = source._isUseResurrection;
+		_isUsePainwand = source._isUsePainwand;
+		_isEnabledDeathPenalty = source._isEnabledDeathPenalty;
+		_isTakePets = source._isTakePets;
+		_isRecallPets = source._isRecallPets;
+		_isUsableItem = source._isUsableItem;
+		_isUsableSkill = source._isUsableSkill;
+	}
+
 	private int accessTile(int x, int y) {
 		if (!isInMap(x, y)) {
 			return 0;

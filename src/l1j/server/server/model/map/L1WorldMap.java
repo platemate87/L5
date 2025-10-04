@@ -67,12 +67,19 @@ public class L1WorldMap {
                 return map;
         }
 
-        public void reloadMap(int mapId) throws IOException {
+        public L1Map reloadMap(int mapId) throws IOException {
                 MapReader reader = MapReader.getDefaultReader();
                 L1Map map = reader.read(mapId);
                 if (map == null) {
                         throw new IOException("Failure to read the map: " + mapId);
                 }
+
+                L1Map existing = _maps.get(mapId);
+                if (existing instanceof L1V1Map && map instanceof L1V1Map) {
+                        ((L1V1Map) existing).applyFrom((L1V1Map) map);
+                        map = existing;
+                }
                 _maps.put(mapId, map);
+                return map;
         }
 }
