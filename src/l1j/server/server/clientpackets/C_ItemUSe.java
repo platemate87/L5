@@ -586,24 +586,30 @@ public class C_ItemUSe extends ClientBasePacket {
 				usePolyPotion(pc, itemId);
 				inventory.removeItem(l1iteminstance, 1);
                         } else if (itemId == 40317) {
-                                L1ItemInstance weapon = pc.getWeapon();
-                                if (weapon == null) {
-                                        pc.sendPackets(new S_SystemMessage("You must equip a weapon to use the whetstone."));
-                                } else if (weapon.get_durability() <= 0) {
-                                        pc.sendPackets(new S_SystemMessage(weapon.getLogName() + " does not need repair."));
-                                } else {
-                                        L1ItemInstance repaired = inventory.recoveryDamage(weapon);
+                                L1ItemInstance targetWeapon = pc.getWeapon();
+                                if (targetWeapon == null || targetWeapon.get_durability() <= 0) {
+                                        for (L1ItemInstance eachItem : inventory.getItems()) {
+                                                if (eachItem.getItem().getType2() == 1 && eachItem.get_durability() > 0) {
+                                                        targetWeapon = eachItem;
+                                                        break;
+                                                }
+                                        }
+                                }
+                                if (targetWeapon != null && targetWeapon.get_durability() > 0) {
+                                        L1ItemInstance repaired = inventory.recoveryDamage(targetWeapon);
                                         if (repaired != null) {
-                                                String msg0 = weapon.getLogName();
-                                                if (weapon.get_durability() == 0) {
+                                                String msg0 = targetWeapon.getLogName();
+                                                if (targetWeapon.get_durability() == 0) {
                                                         pc.sendPackets(new S_ServerMessage(464, msg0)); // 'item' is as good as new now.
                                                 } else {
                                                         pc.sendPackets(new S_ServerMessage(463, msg0)); // 'item`s' condition got better.
                                                 }
                                                 inventory.removeItem(l1iteminstance, 1);
                                         } else {
-                                                pc.sendPackets(new S_ServerMessage(79)); // Nothing happened.
+                                                pc.sendPackets(new S_SystemMessage("No damaged weapons found."));
                                         }
+                                } else {
+                                        pc.sendPackets(new S_SystemMessage("No damaged weapons found."));
                                 }
                         } else if (itemId == 40097 || itemId == 40119 || itemId == 140119 || itemId == 140329) {
 				for (L1ItemInstance eachItem : inventory.getItems()) {
