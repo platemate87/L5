@@ -19,10 +19,6 @@
 
 package l1j.server.server.templates;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import l1j.server.server.model.L1Object;
 
 public class L1Npc extends L1Object implements Cloneable {
@@ -32,17 +28,13 @@ public class L1Npc extends L1Object implements Cloneable {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-        public L1Npc clone() {
-                try {
-                        L1Npc clone = (L1Npc) (super.clone());
-                        if (_transformationStages != null) {
-                                clone._transformationStages = new ArrayList<>(_transformationStages);
-                        }
-                        return clone;
-                } catch (CloneNotSupportedException e) {
-                        throw (new InternalError(e.getMessage()));
-                }
-        }
+	public L1Npc clone() {
+		try {
+			return (L1Npc) (super.clone());
+		} catch (CloneNotSupportedException e) {
+			throw (new InternalError(e.getMessage()));
+		}
+	}
 
 	public L1Npc() {
 	}
@@ -677,30 +669,13 @@ public class L1Npc extends L1Object implements Cloneable {
 		_changeHead = changeHead;
 	}
 
-        private boolean _isCantResurrect;
+	private boolean _isCantResurrect;
 
-        public boolean isCantResurrect() {
-                return _isCantResurrect;
-        }
+	public boolean isCantResurrect() {
+		return _isCantResurrect;
+	}
 
-        public void setCantResurrect(boolean isCantResurrect) {
-                _isCantResurrect = isCantResurrect;
-        }
-
-        private List<L1NpcTransformationStage> _transformationStages = Collections.emptyList();
-
-        public List<L1NpcTransformationStage> getTransformationStages() {
-                if (_transformationStages.isEmpty()) {
-                        return Collections.emptyList();
-                }
-                return Collections.unmodifiableList(_transformationStages);
-        }
-
-        public void setTransformationStages(List<L1NpcTransformationStage> stages) {
-                if (stages == null || stages.isEmpty()) {
-                        _transformationStages = Collections.emptyList();
-                        return;
-                }
-                _transformationStages = new ArrayList<>(stages);
-        }
+	public void setCantResurrect(boolean isCantResurrect) {
+		_isCantResurrect = isCantResurrect;
+	}
 }
