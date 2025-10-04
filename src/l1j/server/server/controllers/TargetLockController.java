@@ -48,10 +48,8 @@ public class TargetLockController {
                 if (target != null) {
                         pc.setTargetLock(target);
                         pc.showTargetLockSelectionIndicator(target);
-                        pc.sendPackets(new S_SystemMessage(String.format("Target locked: %s", target.getName())));
                 } else {
                         pc.clearTargetLock();
-                        pc.sendPackets(new S_SystemMessage("Target lock cleared."));
                 }
 	}
 
