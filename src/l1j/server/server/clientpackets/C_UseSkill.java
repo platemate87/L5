@@ -53,7 +53,10 @@ public class C_UseSkill extends ClientBasePacket {
 		super(abyte0);
 		int row = readC();
 		int column = readC();
-		int skillId = (row * 8) + column + 1;
+                // The client skill window now renders 9 columns instead of 8.
+                // Keep the server-side mapping in sync so that the clicked slot
+                // resolves to the expected skill id (e.g. Counter Barrier).
+                int skillId = (row * 9) + column + 1;
 		String charName = null;
 		String message = null;
 		int targetId = 0;
