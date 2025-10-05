@@ -158,7 +158,6 @@ public final class Config {
 	public static boolean DETECT_DB_RESOURCE_LEAKS;
 
         public static boolean DUAL_PINK;
-        public static boolean ENABLE_HUNTING_ASSIST;
 
 	public static boolean CHAO_PINK;
 
@@ -837,8 +836,7 @@ public final class Config {
 			AUTO_STONE = Boolean.parseBoolean(altSettings.getProperty("UseAutoStone", "False"));
 			USE_PINE_IN_SAFETY = Boolean.parseBoolean(altSettings.getProperty("UsePineInSafety", "True"));
                         MOVE_MACROABLE_NPCS = Boolean.parseBoolean(altSettings.getProperty("MoveMacroableNpcs", "False"));
-                        ENABLE_HUNTING_ASSIST = Boolean.parseBoolean(altSettings.getProperty("EnableHuntingAssist", "False"));
-			NUM_PKS_HELL = Integer.parseInt(altSettings.getProperty("PKsForHell", "10"));
+                        NUM_PKS_HELL = Integer.parseInt(altSettings.getProperty("PKsForHell", "10"));
 			NUM_PKS_HELL_WARNING = Integer.parseInt(altSettings.getProperty("PKsForHellWarning", "5"));
 			MIN_ATONEMENT = Integer.parseInt(altSettings.getProperty("MinPksForAtonement", "5"));
 			ATONEMENT_COST = Integer.parseInt(altSettings.getProperty("CostOfAtonement", "700000"));

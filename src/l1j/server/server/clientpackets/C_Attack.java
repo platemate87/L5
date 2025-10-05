@@ -60,17 +60,9 @@ public class C_Attack extends ClientBasePacket {
 
                 L1PcInstance pc = client.getActiveChar();
 
-                boolean shiftClick = false;
-                boolean rightClick = false;
-                if (Config.ENABLE_HUNTING_ASSIST && remaining() > 0) {
-                        int flags = readC();
-                        shiftClick = (flags & 0x01) != 0;
-                        rightClick = (flags & 0x02) != 0;
+                if (pc.isGhost() || pc.isDead() || pc.isTeleport() || pc.isInvisble() || pc.isInvisDelay()) {
+                        return;
                 }
-
-		if (pc.isGhost() || pc.isDead() || pc.isTeleport() || pc.isInvisble() || pc.isInvisDelay()) {
-			return;
-		}
 
 		if (pc.getInventory().getWeight240() >= 197) {
 			pc.sendPackets(new S_ServerMessage(110));
@@ -85,33 +77,11 @@ public class C_Attack extends ClientBasePacket {
                         }
                 }
 
-                if (Config.ENABLE_HUNTING_ASSIST) {
-                        if (rightClick) {
-                                if (target instanceof L1MonsterInstance) {
-                                        pc.toggleHuntingAssist((L1MonsterInstance) target);
-                                } else {
-                                        pc.toggleHuntingAssist(null);
-                                }
-                                return;
-                        }
-
-                        if (shiftClick && pc.isHuntingAssistActive()) {
-                                if (target instanceof L1MonsterInstance) {
-                                        pc.retargetHuntingAssist((L1MonsterInstance) target);
-                                }
-                                return;
-                        }
-                }
-
                 if (target instanceof L1NpcInstance) {
                         int hiddenStatus = ((L1NpcInstance) target).getHiddenStatus();
                         if (hiddenStatus == L1NpcInstance.HIDDEN_STATUS_SINK || hiddenStatus == L1NpcInstance.HIDDEN_STATUS_FLY) {
                                 return;
                         }
-                }
-
-                if (Config.ENABLE_HUNTING_ASSIST && pc.isHuntingAssistActive()) {
-                        pc.stopHuntingAssist();
                 }
 
                 if (Config.CHECK_ATTACK_INTERVAL) {

@@ -60,10 +60,6 @@ public class C_MoveChar extends ClientBasePacket {
                         return;
                 }
 
-                if (Config.ENABLE_HUNTING_ASSIST && pc.isHuntingAssistActive()) {
-                        pc.stopHuntingAssist();
-                }
-
                 try {
                         if (pc != null && pc.getZoneType() == ZoneType.Safety) {
                                 pc.setLastAggressiveAct(0);

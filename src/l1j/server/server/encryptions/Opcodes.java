@@ -198,8 +198,7 @@ public class Opcodes {
 	public static final int S_OPCODE_SELECTLIST = 208;
         public static final int S_OPCODE_SELECTTARGET = 177;
         public static final int S_OPCODE_SERVERMSG = 14;
-        public static final int S_OPCODE_HUNTINGASSISTMARKER = 254;
-	public static final int S_OPCODE_SERVERSTAT = 55; // can't find
+        public static final int S_OPCODE_SERVERSTAT = 55; // can't find
 	public static final int S_OPCODE_SERVERVERSION = 151;
 	public static final int S_OPCODE_SHOWHTML = 119;
 	public static final int S_OPCODE_SHOWRETRIEVELIST = 250;

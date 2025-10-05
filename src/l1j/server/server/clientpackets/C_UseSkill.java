@@ -66,10 +66,6 @@ public class C_UseSkill extends ClientBasePacket {
                         return;
                 }
 
-                if (Config.ENABLE_HUNTING_ASSIST && pc.isHuntingAssistActive()) {
-                        pc.stopHuntingAssist();
-                }
-
                 if (pc.isTeleport() || pc.isDead()) {
                         return;
                 }
