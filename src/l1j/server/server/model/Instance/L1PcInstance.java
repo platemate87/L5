@@ -97,7 +97,7 @@ import l1j.server.server.model.L1EquipmentSlot;
 import l1j.server.server.model.L1Inventory;
 import l1j.server.server.model.L1Karma;
 import l1j.server.server.model.L1Magic;
-import l1j.server.server.model.L1MonsterInstance;
+import l1j.server.server.model.Instance.L1MonsterInstance;
 import l1j.server.server.model.L1Object;
 import l1j.server.server.model.L1Party;
 import l1j.server.server.model.L1PartyRefresh;
