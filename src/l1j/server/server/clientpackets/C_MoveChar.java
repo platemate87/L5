@@ -54,11 +54,19 @@ public class C_MoveChar extends ClientBasePacket {
 		int locy = readH();
 		int heading = readC();
 
-		L1PcInstance pc = client.getActiveChar();
+                L1PcInstance pc = client.getActiveChar();
 
-		try {
-			if (pc != null && pc.getZoneType() == ZoneType.Safety) {
-				pc.setLastAggressiveAct(0);
+                if (pc == null) {
+                        return;
+                }
+
+                if (Config.ENABLE_HUNTING_ASSIST && pc.isHuntingAssistActive()) {
+                        pc.stopHuntingAssist();
+                }
+
+                try {
+                        if (pc != null && pc.getZoneType() == ZoneType.Safety) {
+                                pc.setLastAggressiveAct(0);
 			}
 		} catch (Exception ex) {
 			// TODO -- remove this in the future when I find out what is causing this

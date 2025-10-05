@@ -101,16 +101,20 @@ public abstract class ClientBasePacket {
 		return result;
 	}
 
-	public byte[] readByte() {
-		byte[] result = new byte[_decrypt.length - _off];
-		try {
-			System.arraycopy(_decrypt, _off, result, 0, _decrypt.length - _off);
-			_off = _decrypt.length;
-		} catch (Exception e) {
-			_log.error("OpCode=" + (_decrypt[0] & 0xff), e);
-		}
-		return result;
-	}
+        public byte[] readByte() {
+                byte[] result = new byte[_decrypt.length - _off];
+                try {
+                        System.arraycopy(_decrypt, _off, result, 0, _decrypt.length - _off);
+                        _off = _decrypt.length;
+                } catch (Exception e) {
+                        _log.error("OpCode=" + (_decrypt[0] & 0xff), e);
+                }
+                return result;
+        }
+
+        protected int remaining() {
+                return _decrypt.length - _off;
+        }
 
 	public String getType() {
 		return "[C] " + this.getClass().getSimpleName();

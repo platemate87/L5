@@ -97,6 +97,7 @@ import l1j.server.server.model.L1EquipmentSlot;
 import l1j.server.server.model.L1Inventory;
 import l1j.server.server.model.L1Karma;
 import l1j.server.server.model.L1Magic;
+import l1j.server.server.model.L1MonsterInstance;
 import l1j.server.server.model.L1Object;
 import l1j.server.server.model.L1Party;
 import l1j.server.server.model.L1PartyRefresh;
@@ -117,6 +118,7 @@ import l1j.server.server.model.classes.L1ClassId;
 import l1j.server.server.model.gametime.L1GameTimeCarrier;
 import l1j.server.server.model.map.L1MapLimiter;
 import l1j.server.server.model.monitor.L1PcAutoUpdate;
+import l1j.server.server.model.monitor.L1PcMonitor;
 import l1j.server.server.model.monitor.L1PcExpMonitor;
 import l1j.server.server.model.monitor.L1PcGhostMonitor;
 import l1j.server.server.model.monitor.L1PcHellMonitor;
@@ -135,6 +137,7 @@ import l1j.server.server.serverpackets.S_EquipmentWindow;
 import l1j.server.server.serverpackets.S_Exp;
 import l1j.server.server.serverpackets.S_HPMeter;
 import l1j.server.server.serverpackets.S_HPUpdate;
+import l1j.server.server.serverpackets.S_HuntingAssistMarker;
 import l1j.server.server.serverpackets.S_Invis;
 import l1j.server.server.serverpackets.S_Lawful;
 import l1j.server.server.serverpackets.S_Liquor;
@@ -172,9 +175,15 @@ public class L1PcInstance extends L1Character {
 
 	private static final long INTERVAL_AUTO_UPDATE = 300;
 	private static final long INTERVAL_EXP_MONITOR = 500;
-	private static final int MP_REGEN_INTERVAL = 1000;
-	private static final long serialVersionUID = 1L;
-	private ScheduledFuture<?> _teleDelayFuture;
+        private static final int MP_REGEN_INTERVAL = 1000;
+        private static final long HUNTING_ASSIST_INTERVAL = 500L;
+        private static final long serialVersionUID = 1L;
+        private ScheduledFuture<?> _teleDelayFuture;
+
+        private final Object _huntingAssistLock = new Object();
+        private ScheduledFuture<?> _huntingAssistFuture;
+        private volatile boolean _huntingAssistActive;
+        private int _huntingAssistTargetId;
 
 	boolean _rpActive = false;
 
@@ -196,7 +205,7 @@ public class L1PcInstance extends L1Character {
 				delay);
 	}
 
-	private class TeleDelay implements Runnable {
+        private class TeleDelay implements Runnable {
 
 		private int y;
 		private int x;
@@ -635,6 +644,229 @@ public class L1PcInstance extends L1Character {
                                 return null;
                         }
                 }
+        }
+
+        private static class HuntingAssistMonitor extends L1PcMonitor {
+
+                public HuntingAssistMonitor(int objectId) {
+                        super(objectId);
+                }
+
+                @Override
+                public void execTask(L1PcInstance pc) {
+                        pc.onHuntingAssistTick();
+                }
+        }
+
+        public boolean isHuntingAssistActive() {
+                return _huntingAssistActive;
+        }
+
+        public void toggleHuntingAssist(L1MonsterInstance preferredTarget) {
+                if (!Config.ENABLE_HUNTING_ASSIST) {
+                        return;
+                }
+                synchronized (_huntingAssistLock) {
+                        if (_huntingAssistActive) {
+                                stopHuntingAssistInternal();
+                        } else {
+                                startHuntingAssist(preferredTarget);
+                        }
+                }
+        }
+
+        public void retargetHuntingAssist(L1MonsterInstance newTarget) {
+                if (!Config.ENABLE_HUNTING_ASSIST || !_huntingAssistActive) {
+                        return;
+                }
+
+                if (!isValidHuntingAssistTarget(newTarget)) {
+                        return;
+                }
+
+                synchronized (_huntingAssistLock) {
+                        applyHuntingAssistTarget(newTarget);
+                }
+        }
+
+        public void stopHuntingAssist() {
+                synchronized (_huntingAssistLock) {
+                        if (!_huntingAssistActive && _huntingAssistTargetId == 0 && _huntingAssistFuture == null) {
+                                return;
+                        }
+                        stopHuntingAssistInternal();
+                }
+        }
+
+        private void startHuntingAssist(L1MonsterInstance preferredTarget) {
+                if (isDead() || isTeleport() || getZoneType() == ZoneType.Safety) {
+                        return;
+                }
+
+                L1MonsterInstance target = preferredTarget;
+                if (!isValidHuntingAssistTarget(target)) {
+                        target = findNearestHuntingAssistTarget();
+                }
+
+                if (target == null) {
+                        return;
+                }
+
+                _huntingAssistActive = true;
+                applyHuntingAssistTarget(target);
+
+                if (_huntingAssistFuture != null) {
+                        _huntingAssistFuture.cancel(false);
+                }
+                _huntingAssistFuture = GeneralThreadPool.getInstance()
+                                .pcScheduleAtFixedRate(new HuntingAssistMonitor(getId()), 0L, HUNTING_ASSIST_INTERVAL);
+        }
+
+        private void stopHuntingAssistInternal() {
+                if (_huntingAssistFuture != null) {
+                        _huntingAssistFuture.cancel(false);
+                        _huntingAssistFuture = null;
+                }
+                if (_huntingAssistTargetId != 0) {
+                        sendPackets(new S_HuntingAssistMarker(_huntingAssistTargetId, 0, 0, false));
+                }
+                _huntingAssistTargetId = 0;
+                _huntingAssistActive = false;
+        }
+
+        private void onHuntingAssistTick() {
+                if (!Config.ENABLE_HUNTING_ASSIST) {
+                        stopHuntingAssist();
+                        return;
+                }
+                if (!_huntingAssistActive) {
+                        return;
+                }
+
+                if (isDead() || isTeleport()) {
+                        stopHuntingAssist();
+                        return;
+                }
+
+                if (getZoneType() == ZoneType.Safety) {
+                        synchronized (_huntingAssistLock) {
+                                if (_huntingAssistTargetId != 0) {
+                                        sendPackets(new S_HuntingAssistMarker(_huntingAssistTargetId, 0, 0, false));
+                                        _huntingAssistTargetId = 0;
+                                }
+                        }
+                        return;
+                }
+
+                L1MonsterInstance target = resolveHuntingAssistTarget();
+                if (!isValidHuntingAssistTarget(target)) {
+                        target = findNearestHuntingAssistTarget();
+                        if (target == null) {
+                                stopHuntingAssist();
+                                return;
+                        }
+                        synchronized (_huntingAssistLock) {
+                                applyHuntingAssistTarget(target);
+                        }
+                        target = resolveHuntingAssistTarget();
+                        if (target == null) {
+                                stopHuntingAssist();
+                                return;
+                        }
+                } else {
+                        updateHuntingAssistMarker(target);
+                }
+
+                try {
+                        target.onAction(this);
+                } catch (Exception e) {
+                        _log.warn("Hunting assist attack failed.", e);
+                        stopHuntingAssist();
+                }
+        }
+
+        private void applyHuntingAssistTarget(L1MonsterInstance target) {
+                if (target == null) {
+                        if (_huntingAssistTargetId != 0) {
+                                sendPackets(new S_HuntingAssistMarker(_huntingAssistTargetId, 0, 0, false));
+                                _huntingAssistTargetId = 0;
+                        }
+                        return;
+                }
+
+                int previousTarget = _huntingAssistTargetId;
+                _huntingAssistTargetId = target.getId();
+                if (previousTarget != 0 && previousTarget != _huntingAssistTargetId) {
+                        sendPackets(new S_HuntingAssistMarker(previousTarget, 0, 0, false));
+                }
+                updateHuntingAssistMarker(target);
+        }
+
+        private L1MonsterInstance resolveHuntingAssistTarget() {
+                if (_huntingAssistTargetId == 0) {
+                        return null;
+                }
+                L1Object obj = L1World.getInstance().findObject(_huntingAssistTargetId);
+                if (obj instanceof L1MonsterInstance) {
+                        return (L1MonsterInstance) obj;
+                }
+                return null;
+        }
+
+        private L1MonsterInstance findNearestHuntingAssistTarget() {
+                double nearestDistance = Double.MAX_VALUE;
+                L1MonsterInstance nearest = null;
+                for (L1Object known : getKnownObjects()) {
+                        if (known == null) {
+                                continue;
+                        }
+                        if (!(known instanceof L1MonsterInstance)) {
+                                continue;
+                        }
+                        L1MonsterInstance monster = (L1MonsterInstance) known;
+                        if (!isValidHuntingAssistTarget(monster)) {
+                                continue;
+                        }
+                        double distance = getLocation().getTileLineDistance(monster.getLocation());
+                        if (distance < nearestDistance) {
+                                nearestDistance = distance;
+                                nearest = monster;
+                        }
+                }
+                return nearest;
+        }
+
+        private boolean isValidHuntingAssistTarget(L1MonsterInstance monster) {
+                if (monster == null) {
+                        return false;
+                }
+                if (monster.isDead() || monster.getCurrentHp() <= 0 || monster._destroyed) {
+                        return false;
+                }
+                if (monster.getMaxHp() <= 0) {
+                        return false;
+                }
+                L1Npc template = monster.getNpcTemplate();
+                if (template == null || template.get_hp() <= 0) {
+                        return false;
+                }
+                if (monster.getMapId() != getMapId()) {
+                        return false;
+                }
+                if (monster.getZoneType() == ZoneType.Safety) {
+                        return false;
+                }
+                if (monster.getHiddenStatus() != L1NpcInstance.HIDDEN_STATUS_NONE) {
+                        return false;
+                }
+                return true;
+        }
+
+        private void updateHuntingAssistMarker(L1MonsterInstance target) {
+                if (target == null) {
+                        return;
+                }
+                sendPackets(new S_HuntingAssistMarker(target.getId(), target.getX(), target.getY(), true));
         }
 
         private static class MpGainEntry {
@@ -2249,15 +2481,16 @@ public class L1PcInstance extends L1Character {
 		skillList.clear();
 	}
 
-	public void death(L1Character lastAttacker) {
-		synchronized (this) {
-			if (isDead()) {
-				return;
-			}
-			setDead(true);
-			this.setLastAggressiveAct(0);
-			setStatus(ActionCodes.ACTION_Die);
-		}
+        public void death(L1Character lastAttacker) {
+                synchronized (this) {
+                        if (isDead()) {
+                                return;
+                        }
+                        stopHuntingAssist();
+                        setDead(true);
+                        this.setLastAggressiveAct(0);
+                        setStatus(ActionCodes.ACTION_Die);
+                }
 
 		GeneralThreadPool.getInstance().execute(new Death(lastAttacker));
 
@@ -3198,10 +3431,11 @@ public class L1PcInstance extends L1Character {
 		return L1ClassId.isMage(getClassId());
 	}
 
-	public void logout() {
-		L1World world = L1World.getInstance();
-		if (getClanid() != 0) {
-			L1Clan clan = world.getClan(getClanname());
+        public void logout() {
+                L1World world = L1World.getInstance();
+                stopHuntingAssist();
+                if (getClanid() != 0) {
+                        L1Clan clan = world.getClan(getClanname());
 			if (clan != null) {
 				if (clan.getWarehouseUsingChar() == getId()) {
 					clan.setWarehouseUsingChar(0);

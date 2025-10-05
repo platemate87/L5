@@ -60,11 +60,19 @@ public class C_UseSkill extends ClientBasePacket {
 		int targetX = 0;
 		int targetY = 0;
 
-		L1PcInstance pc = client.getActiveChar();
+                L1PcInstance pc = client.getActiveChar();
 
-		if (pc.isTeleport() || pc.isDead()) {
-			return;
-		}
+                if (pc == null) {
+                        return;
+                }
+
+                if (Config.ENABLE_HUNTING_ASSIST && pc.isHuntingAssistActive()) {
+                        pc.stopHuntingAssist();
+                }
+
+                if (pc.isTeleport() || pc.isDead()) {
+                        return;
+                }
 
 		if (!pc.getMap().isUsableSkill()) {
 			pc.sendPackets(new S_ServerMessage(563)); // You can't use it here.
