@@ -97,7 +97,7 @@ import l1j.server.server.model.L1EquipmentSlot;
 import l1j.server.server.model.L1Inventory;
 import l1j.server.server.model.L1Karma;
 import l1j.server.server.model.L1Magic;
-import l1j.server.server.model.L1MonsterInstance;
+import l1j.server.server.model.Instance.L1MonsterInstance;
 import l1j.server.server.model.L1Object;
 import l1j.server.server.model.L1Party;
 import l1j.server.server.model.L1PartyRefresh;
@@ -841,13 +841,6 @@ public class L1PcInstance extends L1Character {
                         return false;
                 }
                 if (monster.isDead() || monster.getCurrentHp() <= 0 || monster._destroyed) {
-                        return false;
-                }
-                if (monster.getMaxHp() <= 0) {
-                        return false;
-                }
-                L1Npc template = monster.getNpcTemplate();
-                if (template == null || template.get_hp() <= 0) {
                         return false;
                 }
                 if (monster.getMapId() != getMapId()) {
